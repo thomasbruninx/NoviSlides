@@ -67,6 +67,7 @@ export type SlideshowDto = {
   revealTransition: string;
   loop: boolean;
   controls: boolean;
+  autoSlideStoppable: boolean;
   defaultScreenKey: string;
   createdAt: string;
   updatedAt: string;

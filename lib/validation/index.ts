@@ -12,6 +12,7 @@ export const createSlideshowSchema = z.object({
   revealTransition: z.string().optional(),
   loop: z.boolean().optional(),
   controls: z.boolean().optional(),
+  autoSlideStoppable: z.boolean().optional(),
   defaultScreenKey: screenKeySchema.optional(),
   templateKey: z.string().optional(),
   initialScreen: z
@@ -29,6 +30,7 @@ export const updateSlideshowSchema = z.object({
   revealTransition: z.string().optional(),
   loop: z.boolean().optional(),
   controls: z.boolean().optional(),
+  autoSlideStoppable: z.boolean().optional(),
   defaultScreenKey: screenKeySchema.optional(),
   isActive: z.boolean().optional()
 });

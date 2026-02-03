@@ -32,6 +32,7 @@ export class SlideshowService {
     revealTransition?: string;
     loop?: boolean;
     controls?: boolean;
+    autoSlideStoppable?: boolean;
     defaultScreenKey?: string;
     templateKey?: string;
     initialScreen?: { key: string; width: number; height: number };
@@ -45,6 +46,7 @@ export class SlideshowService {
       revealTransition: input.revealTransition ?? 'slide',
       loop: input.loop ?? true,
       controls: input.controls ?? true,
+      autoSlideStoppable: input.autoSlideStoppable ?? false,
       defaultScreenKey
     });
 
@@ -75,6 +77,7 @@ export class SlideshowService {
     revealTransition?: string;
     loop?: boolean;
     controls?: boolean;
+    autoSlideStoppable?: boolean;
     defaultScreenKey?: string;
     isActive?: boolean;
   }) {
@@ -155,6 +158,7 @@ export class SlideshowService {
           revealTransition: 'fade',
           loop: true,
           controls: true,
+          autoSlideStoppable: false,
           defaultScreenKey: 'main'
         }
       });

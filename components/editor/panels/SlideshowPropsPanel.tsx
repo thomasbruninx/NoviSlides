@@ -57,6 +57,11 @@ export default function SlideshowPropsPanel({
         checked={slideshow.controls}
         onChange={(event) => onChange({ controls: event.currentTarget.checked })}
       />
+      <Switch
+        label="Timer"
+        checked={slideshow.autoSlideStoppable}
+        onChange={(event) => onChange({ autoSlideStoppable: event.currentTarget.checked })}
+      />
     </Stack>
   );
 }

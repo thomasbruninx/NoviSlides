@@ -23,7 +23,8 @@ export default function RevealDeck({
     autoSlide: slideshow.defaultAutoSlideMs,
     transition: slideshow.revealTransition,
     loop: slideshow.loop,
-    controls: slideshow.controls
+    controls: slideshow.controls,
+    autoSlideStoppable: slideshow.autoSlideStoppable
   });
   useEffect(() => {
     latestConfigRef.current = {
@@ -32,9 +33,18 @@ export default function RevealDeck({
       autoSlide: slideshow.defaultAutoSlideMs,
       transition: slideshow.revealTransition,
       loop: slideshow.loop,
-      controls: slideshow.controls
+      controls: slideshow.controls,
+      autoSlideStoppable: slideshow.autoSlideStoppable
     };
-  }, [screen.width, screen.height, slideshow.controls, slideshow.defaultAutoSlideMs, slideshow.loop, slideshow.revealTransition]);
+  }, [
+    screen.width,
+    screen.height,
+    slideshow.controls,
+    slideshow.defaultAutoSlideMs,
+    slideshow.loop,
+    slideshow.revealTransition,
+    slideshow.autoSlideStoppable
+  ]);
 
   useEffect(() => {
     if (!deckRef.current) return;
@@ -49,6 +59,7 @@ export default function RevealDeck({
         transition: initialConfig.transition,
         loop: initialConfig.loop,
         controls: initialConfig.controls,
+        autoSlideStoppable: initialConfig.autoSlideStoppable,
         progress: false,
         slideNumber: false,
         keyboard: true,
@@ -66,7 +77,8 @@ export default function RevealDeck({
             autoSlide: config.autoSlide,
             transition: config.transition,
             loop: config.loop,
-            controls: config.controls
+            controls: config.controls,
+            autoSlideStoppable: config.autoSlideStoppable
           });
           deck.sync();
           deck.layout();
@@ -82,12 +94,22 @@ export default function RevealDeck({
         autoSlide: config.autoSlide,
         transition: config.transition,
         loop: config.loop,
-        controls: config.controls
+        controls: config.controls,
+        autoSlideStoppable: config.autoSlideStoppable
       });
       revealRef.current.sync();
       revealRef.current.layout();
     }
-  }, [slides.length, screen.width, screen.height, slideshow.controls, slideshow.defaultAutoSlideMs, slideshow.loop, slideshow.revealTransition]);
+  }, [
+    slides.length,
+    screen.width,
+    screen.height,
+    slideshow.controls,
+    slideshow.defaultAutoSlideMs,
+    slideshow.loop,
+    slideshow.revealTransition,
+    slideshow.autoSlideStoppable
+  ]);
 
   return (
     <div 

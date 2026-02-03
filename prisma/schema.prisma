@@ -17,6 +17,7 @@ model Slideshow {
   revealTransition   String   @default("slide")
   loop               Boolean  @default(true)
   controls           Boolean  @default(true)
+  autoSlideStoppable Boolean  @default(false)
   defaultScreenKey   String   @default("main")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
