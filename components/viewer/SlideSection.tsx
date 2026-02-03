@@ -29,7 +29,7 @@ export default function SlideSection({
       data-background-image={slide.backgroundImagePath ?? undefined}
       data-transition={slide.transitionOverride ?? undefined}
       data-auto-slide={slide.autoSlideMsOverride ?? undefined}
-      style={{ width: '100%', height: '100%', position: 'relative' }}
+      style={{ width: '100%', height: '100%' }}
     >
       <div className="slide-layer">
         {sorted.map((element, index) => {

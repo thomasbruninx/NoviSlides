@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Reveal from 'reveal.js';
-import { useViewportSize } from '@mantine/hooks';
 import type { SlideDto, ScreenDto, SlideshowDto } from '@/lib/types';
-import { computeScale } from '@/lib/utils/aspect';
 import SlideSection from './SlideSection';
 
 export default function RevealDeck({
@@ -18,56 +16,91 @@ export default function RevealDeck({
 }) {
   const deckRef = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<InstanceType<typeof Reveal> | null>(null);
-  const { width: viewportWidth, height: viewportHeight } = useViewportSize();
-
-  const layout = useMemo(() => {
-    return computeScale(screen.width, screen.height, viewportWidth, viewportHeight);
-  }, [screen.width, screen.height, viewportWidth, viewportHeight]);
+  const isReadyRef = useRef(false);
+  const latestConfigRef = useRef({
+    width: screen.width,
+    height: screen.height,
+    autoSlide: slideshow.defaultAutoSlideMs,
+    transition: slideshow.revealTransition,
+    loop: slideshow.loop,
+    controls: slideshow.controls
+  });
+  useEffect(() => {
+    latestConfigRef.current = {
+      width: screen.width,
+      height: screen.height,
+      autoSlide: slideshow.defaultAutoSlideMs,
+      transition: slideshow.revealTransition,
+      loop: slideshow.loop,
+      controls: slideshow.controls
+    };
+  }, [screen.width, screen.height, slideshow.controls, slideshow.defaultAutoSlideMs, slideshow.loop, slideshow.revealTransition]);
 
   useEffect(() => {
     if (!deckRef.current) return;
 
     if (!revealRef.current) {
+      const initialConfig = latestConfigRef.current;
       const deck = new Reveal(deckRef.current, {
         embedded: true,
-        width: screen.width,
-        height: screen.height,
-        autoSlide: slideshow.defaultAutoSlideMs,
-        transition: slideshow.revealTransition,
-        loop: slideshow.loop,
-        controls: slideshow.controls,
+        width: initialConfig.width,
+        height: initialConfig.height,
+        autoSlide: initialConfig.autoSlide,
+        transition: initialConfig.transition,
+        loop: initialConfig.loop,
+        controls: initialConfig.controls,
         progress: false,
         slideNumber: false,
         keyboard: true,
         touch: true
       });
-      deck.initialize();
       revealRef.current = deck;
-    } else {
+      deck
+        .initialize()
+        .then(() => {
+          isReadyRef.current = true;
+          const config = latestConfigRef.current;
+          deck.configure({
+            width: config.width,
+            height: config.height,
+            autoSlide: config.autoSlide,
+            transition: config.transition,
+            loop: config.loop,
+            controls: config.controls
+          });
+          deck.sync();
+          deck.layout();
+        })
+        .catch(() => {
+          // Ignore initialization errors to avoid crashing the viewer.
+        });
+    } else if (isReadyRef.current) {
+      const config = latestConfigRef.current;
       revealRef.current.configure({
-        autoSlide: slideshow.defaultAutoSlideMs,
-        transition: slideshow.revealTransition,
-        loop: slideshow.loop,
-        controls: slideshow.controls
+        width: config.width,
+        height: config.height,
+        autoSlide: config.autoSlide,
+        transition: config.transition,
+        loop: config.loop,
+        controls: config.controls
       });
       revealRef.current.sync();
       revealRef.current.layout();
     }
   }, [slides.length, screen.width, screen.height, slideshow.controls, slideshow.defaultAutoSlideMs, slideshow.loop, slideshow.revealTransition]);
 
-  useEffect(() => {
-    revealRef.current?.layout();
-  }, [layout.scale, layout.width, layout.height]);
-
   return (
-    <div className="viewer-root">
+    <div 
+      className="viewer-root" 
+      style={{
+        width: screen.width,
+        height: screen.height
+      }}>
       <div
         className="viewer-frame"
         style={{
           width: screen.width,
-          height: screen.height,
-          transform: `translate(${layout.offsetX}px, ${layout.offsetY}px) scale(${layout.scale})`,
-          transformOrigin: 'top left'
+          height: screen.height
         }}
       >
         <div ref={deckRef} className="reveal">
