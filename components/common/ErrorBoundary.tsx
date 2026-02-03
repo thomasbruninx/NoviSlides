@@ -7,7 +7,7 @@ export default class ErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean; error?: Error }
 > {
-  state = { hasError: false };
+  state: { hasError: boolean; error?: Error } = { hasError: false, error: undefined };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };

@@ -1,4 +1,4 @@
-import RevealDeck from '@/components/viewer/RevealDeck';
+import LiveRevealDeck from '@/components/viewer/LiveRevealDeck';
 import ViewerEmpty from '@/components/viewer/ViewerEmpty';
 import { prisma } from '@/lib/db/prisma';
 import { toScreenDto, toSlideDto, toSlideElementDto, toSlideshowDto } from '@/lib/utils/serializers';
@@ -40,10 +40,14 @@ export default async function ShowPage() {
   }));
 
   return (
-    <RevealDeck
-      slideshow={toSlideshowDto(slideshow)}
-      screen={toScreenDto(screen)}
-      slides={slides}
+    <LiveRevealDeck
+      slideshowId={slideshow.id}
+      screenKey={screen.key}
+      initialDeck={{
+        slideshow: toSlideshowDto(slideshow),
+        screen: toScreenDto(screen),
+        slides
+      }}
     />
   );
 }

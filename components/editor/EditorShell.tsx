@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   AppShell,
@@ -29,7 +29,7 @@ import SlidePropsPanel from './panels/SlidePropsPanel';
 import ElementPropsPanel from './panels/ElementPropsPanel';
 import SlideshowPropsPanel from './panels/SlideshowPropsPanel';
 
-const defaultLabelData = {
+const defaultLabelData: SlideElementDto['dataJson'] = {
   text: 'New label',
   fontSize: 36,
   fontFamily: 'Plus Jakarta Sans, Segoe UI, Arial',
@@ -75,9 +75,9 @@ export default function EditorShell() {
     enabled: !!selectedScreenId
   });
 
-  const slideshows = slideshowsQuery.data ?? [];
-  const screens = screensQuery.data ?? [];
-  const slides = slidesQuery.data ?? [];
+  const slideshows = useMemo(() => slideshowsQuery.data ?? [], [slideshowsQuery.data]);
+  const screens = useMemo(() => screensQuery.data ?? [], [screensQuery.data]);
+  const slides = useMemo(() => slidesQuery.data ?? [], [slidesQuery.data]);
 
   const selectedSlideshow = slideshows.find((item) => item.id === selectedSlideshowId) ?? null;
   const selectedScreen = screens.find((item) => item.id === selectedScreenId) ?? null;
@@ -112,37 +112,6 @@ export default function EditorShell() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
-
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return;
-      }
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
-        event.preventDefault();
-        deleteElementMutation.mutate(selectedElementId);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        const last = undoStack.current.pop();
-        if (last) {
-          redoStack.current.push(last);
-          updateElementMutation.mutate({ id: last.id, attrs: last.prev });
-        }
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
-        event.preventDefault();
-        const last = redoStack.current.pop();
-        if (last) {
-          undoStack.current.push(last);
-          updateElementMutation.mutate({ id: last.id, attrs: last.prev });
-        }
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [selectedElementId]);
 
   const createSlideshowMutation = useMutation({
     mutationFn: (payload: { name: string; templateKey?: string }) =>
@@ -347,6 +316,37 @@ export default function EditorShell() {
     },
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
+        event.preventDefault();
+        deleteElementMutation.mutate(selectedElementId);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        const last = undoStack.current.pop();
+        if (last) {
+          redoStack.current.push(last);
+          updateElementMutation.mutate({ id: last.id, attrs: last.prev });
+        }
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        const last = redoStack.current.pop();
+        if (last) {
+          undoStack.current.push(last);
+          updateElementMutation.mutate({ id: last.id, attrs: last.prev });
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedElementId, deleteElementMutation, updateElementMutation]);
 
   const updateSlideLocal = (slideId: string, attrs: Partial<SlideDto>) => {
     queryClient.setQueryData<SlideDto[]>(['slides', selectedScreenId], (current) => {

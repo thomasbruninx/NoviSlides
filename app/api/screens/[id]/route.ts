@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { ScreenRepository } from '@/lib/repositories';
 import { SlideshowService } from '@/lib/services';
 import { updateScreenSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
@@ -7,8 +6,8 @@ import { fail, ok } from '@/lib/utils/respond';
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const payload = updateScreenSchema.parse(await request.json());
-    const repo = new ScreenRepository();
-    const updated = await repo.update(params.id, payload);
+    const service = new SlideshowService();
+    const updated = await service.updateScreen(params.id, payload);
     return ok(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {

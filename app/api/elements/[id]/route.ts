@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SlideElementRepository } from '@/lib/repositories';
+import { ElementService } from '@/lib/services';
 import { updateElementSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 import { toSlideElementDto } from '@/lib/utils/serializers';
@@ -7,8 +7,8 @@ import { toSlideElementDto } from '@/lib/utils/serializers';
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const payload = updateElementSchema.parse(await request.json());
-    const repo = new SlideElementRepository();
-    const updated = await repo.update(params.id, {
+    const service = new ElementService();
+    const updated = await service.updateElement(params.id, {
       type: payload.type,
       x: payload.x,
       y: payload.y,
@@ -32,8 +32,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   try {
-    const repo = new SlideElementRepository();
-    const deleted = await repo.delete(params.id);
+    const service = new ElementService();
+    const deleted = await service.deleteElement(params.id);
     return ok(toSlideElementDto(deleted));
   } catch (error) {
     console.error('DELETE /api/elements/:id', error);

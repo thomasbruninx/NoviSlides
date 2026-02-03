@@ -1,5 +1,13 @@
 import type { Slideshow, Screen, Slide, SlideElement, MediaAsset } from '@prisma/client';
-import type { SlideshowDto, ScreenDto, SlideDto, SlideElementDto, MediaAssetDto } from '../types';
+import type {
+  SlideshowDto,
+  ScreenDto,
+  SlideDto,
+  SlideElementDto,
+  MediaAssetDto,
+  SlideElementAnimation,
+  SlideElementType
+} from '../types';
 
 export function toSlideshowDto(slideshow: Slideshow): SlideshowDto {
   return {
@@ -34,8 +42,20 @@ export function toSlideElementDto(element: SlideElement): SlideElementDto {
       parsed = {};
     }
   }
+
+  const type = (['image', 'label'] as const).includes(element.type as SlideElementType)
+    ? (element.type as SlideElementType)
+    : 'label';
+  const animation = (['none', 'fade', 'zoom', 'appear'] as const).includes(
+    element.animation as SlideElementAnimation
+  )
+    ? (element.animation as SlideElementAnimation)
+    : 'none';
+
   return {
     ...element,
+    type,
+    animation,
     createdAt: element.createdAt.toISOString(),
     updatedAt: element.updatedAt.toISOString(),
     dataJson: parsed

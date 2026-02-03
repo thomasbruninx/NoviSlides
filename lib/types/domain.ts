@@ -54,6 +54,7 @@ export type ScreenDto = {
   key: string;
   width: number;
   height: number;
+  revision: number;
   createdAt: string;
   updatedAt: string;
   slides?: SlideDto[];
@@ -72,6 +73,12 @@ export type SlideshowDto = {
   createdAt: string;
   updatedAt: string;
   screens?: ScreenDto[];
+};
+
+export type ScreenDeckDto = {
+  slideshow: SlideshowDto;
+  screen: ScreenDto;
+  slides: SlideDto[];
 };
 
 export type MediaAssetDto = {

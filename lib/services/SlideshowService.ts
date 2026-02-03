@@ -1,6 +1,8 @@
 import { prisma } from '../db/prisma';
 import { SlideshowRepository, ScreenRepository, SlideRepository } from '../repositories';
 import { TemplateService } from './TemplateService';
+import { bumpAllScreensForSlideshow, bumpScreenRevision } from './ScreenRevisionService';
+import { eventHub } from './events';
 
 const DEFAULT_RESOLUTION = { width: 1920, height: 540 };
 
@@ -81,7 +83,37 @@ export class SlideshowService {
     defaultScreenKey?: string;
     isActive?: boolean;
   }) {
-    return this.slideshowRepo.update(id, data);
+    const shouldBump =
+      data.defaultAutoSlideMs !== undefined ||
+      data.revealTransition !== undefined ||
+      data.loop !== undefined ||
+      data.controls !== undefined ||
+      data.autoSlideStoppable !== undefined;
+
+    if (!shouldBump) {
+      return this.slideshowRepo.update(id, data);
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.slideshow.update({
+        where: { id },
+        data
+      });
+      const revisions = await bumpAllScreensForSlideshow(id, tx);
+      return { updated, revisions };
+    });
+
+    for (const revisionInfo of result.revisions) {
+      eventHub.publish({
+        type: 'screenChanged',
+        slideshowId: revisionInfo.slideshowId,
+        screenKey: revisionInfo.screenKey,
+        revision: revisionInfo.revision,
+        at: new Date().toISOString()
+      });
+    }
+
+    return result.updated;
   }
 
   async deleteSlideshow(id: string) {
@@ -109,7 +141,24 @@ export class SlideshowService {
   }
 
   async updateScreen(id: string, input: { key?: string; width?: number; height?: number }) {
-    return this.screenRepo.update(id, input);
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.screen.update({
+        where: { id },
+        data: input
+      });
+      const revisionInfo = await bumpScreenRevision(updated.id, tx);
+      return { updated, revisionInfo };
+    });
+
+    eventHub.publish({
+      type: 'screenChanged',
+      slideshowId: result.revisionInfo.slideshowId,
+      screenKey: result.revisionInfo.screenKey,
+      revision: result.revisionInfo.revision,
+      at: new Date().toISOString()
+    });
+
+    return result.updated;
   }
 
   async deleteScreen(id: string) {

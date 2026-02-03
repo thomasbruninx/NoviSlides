@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SlideElementRepository } from '@/lib/repositories';
+import { ElementService } from '@/lib/services';
 import { createElementSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 import { toSlideElementDto } from '@/lib/utils/serializers';
@@ -7,9 +7,8 @@ import { toSlideElementDto } from '@/lib/utils/serializers';
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const payload = createElementSchema.parse(await request.json());
-    const repo = new SlideElementRepository();
-    const created = await repo.create({
-      slide: { connect: { id: params.id } },
+    const service = new ElementService();
+    const created = await service.createElement(params.id, {
       type: payload.type,
       x: payload.x,
       y: payload.y,

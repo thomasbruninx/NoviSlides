@@ -4,6 +4,7 @@ A production-ready multi-screen slideshow editor and viewer built with Next.js A
 
 ## Features
 - Viewer endpoints for active and specific slideshows/screens
+- Live refresh for viewer devices via SSE with polling fallback
 - WYSIWYG editor with drag/drop, resize, layers, and label editing
 - Multi-screen decks with locked resolutions (default 1920 x 540)
 - Template system with default starter template
@@ -50,6 +51,12 @@ Use the **Create Demo** button in the editor. It creates a multi-screen slidesho
 - `GET /show/[slideshowId]/screen/[screenKey]` specific screen
 
 If no active slideshow exists, the viewer shows a friendly empty state.
+
+### Live refresh (SSE)
+Viewer pages subscribe to `GET /api/events?slideshowId=...&screenKey=...` and refresh when the
+screen revision changes. If SSE fails, the viewer falls back to polling every ~15 seconds.
+
+Note: the current EventHub is in-memory, so live refresh only works within a single server instance.
 
 ## Templates
 Templates are defined in `lib/templates/templates.ts` and are applied at creation.

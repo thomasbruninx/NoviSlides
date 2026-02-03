@@ -1,6 +1,7 @@
-import type { SlideDto, SlideElementDto } from '@/lib/types';
 import type { CSSProperties } from 'react';
 import clsx from 'clsx';
+import Image from 'next/image';
+import type { SlideDto, SlideElementDto } from '@/lib/types';
 
 function getFragmentClass(animation?: string) {
   switch (animation) {
@@ -75,10 +76,13 @@ export default function SlideSection({
               style={style}
             >
               {data.path ? (
-                <img
+                <Image
                   src={data.path as string}
-                  alt={data.originalName as string | undefined}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  alt={(data.originalName as string | undefined) ?? ''}
+                  fill
+                  sizes="100vw"
+                  unoptimized
+                  style={{ objectFit: 'cover' }}
                 />
               ) : null}
             </div>

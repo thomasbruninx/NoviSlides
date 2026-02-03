@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { SlideRepository } from '@/lib/repositories';
+import { SlideService } from '@/lib/services';
 import { reorderSlidesSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const payload = reorderSlidesSchema.parse(await request.json());
-    const repo = new SlideRepository();
-    const result = await repo.reorder(params.id, payload.orderedIds);
+    const service = new SlideService();
+    const result = await service.reorderSlides(params.id, payload.orderedIds);
     return ok(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

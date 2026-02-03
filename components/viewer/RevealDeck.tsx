@@ -111,6 +111,18 @@ export default function RevealDeck({
     slideshow.autoSlideStoppable
   ]);
 
+  useEffect(() => {
+    return () => {
+      try {
+        revealRef.current?.destroy();
+      } catch {
+        // Ignore teardown errors.
+      } finally {
+        revealRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div 
       className="viewer-root" 

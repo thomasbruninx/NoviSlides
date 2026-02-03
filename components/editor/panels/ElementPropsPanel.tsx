@@ -1,9 +1,9 @@
 'use client';
 
 import { Stack, Text, NumberInput, Select, TextInput, ColorInput, SegmentedControl } from '@mantine/core';
-import type { SlideElementDto } from '@/lib/types';
+import type { SlideElementAnimation, SlideElementDto } from '@/lib/types';
 
-const animationOptions = [
+const animationOptions: Array<{ value: SlideElementAnimation; label: string }> = [
   { value: 'none', label: 'None' },
   { value: 'fade', label: 'Fade' },
   { value: 'zoom', label: 'Zoom' },
@@ -54,7 +54,12 @@ export default function ElementPropsPanel({
         step={0.05}
       />
       <NumberInput label="Z Index" value={element.zIndex} onChange={(val) => onChange({ zIndex: toNumber(val) })} />
-      <Select label="Animation" data={animationOptions} value={element.animation} onChange={(val) => onChange({ animation: val ?? 'none' })} />
+      <Select
+        label="Animation"
+        data={animationOptions}
+        value={element.animation}
+        onChange={(val) => onChange({ animation: (val ?? 'none') as SlideElementAnimation })}
+      />
 
       {element.type === 'label' ? (
         <>

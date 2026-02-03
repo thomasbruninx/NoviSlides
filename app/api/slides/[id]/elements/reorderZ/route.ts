@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { SlideElementRepository } from '@/lib/repositories';
+import { ElementService } from '@/lib/services';
 import { reorderElementsSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const payload = reorderElementsSchema.parse(await request.json());
-    const repo = new SlideElementRepository();
-    const result = await repo.reorderZ(params.id, payload.orderedIds);
+    const service = new ElementService();
+    const result = await service.reorderElements(params.id, payload.orderedIds);
     return ok(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

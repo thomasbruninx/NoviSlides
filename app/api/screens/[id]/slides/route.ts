@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { prisma } from '@/lib/db/prisma';
 import { SlideRepository } from '@/lib/repositories';
+import { SlideService } from '@/lib/services';
 import { toSlideDto, toSlideElementDto } from '@/lib/utils/serializers';
 import { createSlideSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
@@ -18,17 +18,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const payload = createSlideSchema.parse(await request.json());
-    const orderIndex = await prisma.slide.count({ where: { screenId: params.id } });
-    const repo = new SlideRepository();
-    const created = await repo.create({
-      screen: { connect: { id: params.id } },
-      orderIndex,
-      title: payload.title,
-      autoSlideMsOverride: payload.autoSlideMsOverride ?? null,
-      backgroundColor: payload.backgroundColor ?? null,
-      backgroundImagePath: payload.backgroundImagePath ?? null,
-      transitionOverride: payload.transitionOverride ?? null
-    });
+    const service = new SlideService();
+    const created = await service.createSlide(params.id, payload);
     return ok(created, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
