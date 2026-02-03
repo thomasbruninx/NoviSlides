@@ -6,6 +6,7 @@ import {
   AppShell,
   Box,
   Button,
+  Drawer,
   Divider,
   Group,
   Loader,
@@ -44,6 +45,10 @@ export default function EditorShell() {
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const gridSize = 25;
+  const [showSlideshows, setShowSlideshows] = useState(true);
+  const [showScreens, setShowScreens] = useState(false);
+  const [showSlides, setShowSlides] = useState(false);
   const undoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
   const redoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -422,7 +427,8 @@ export default function EditorShell() {
 
   const handleElementCommit = (id: string, attrs: Partial<SlideElementDto>) => {
     if (snapToGrid) {
-      const snap = (value?: number) => (typeof value === 'number' ? Math.round(value / 10) * 10 : value);
+      const snap = (value?: number) =>
+        typeof value === 'number' ? Math.round(value / gridSize) * gridSize : value;
       attrs = {
         ...attrs,
         x: snap(attrs.x),
@@ -519,45 +525,96 @@ export default function EditorShell() {
     <AppShell padding={0} className="editor-shell">
       <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={handleImageSelected} />
       <AppShell.Main>
-        <Group align="stretch" gap={0} style={{ height: '100vh' }}>
-          <Paper withBorder radius={0} style={{ width: 300, background: '#0f1420' }}>
-            <SlideshowSidebar
-              slideshows={slideshows}
-              selectedId={selectedSlideshowId}
-              templates={templatesQuery.data ?? []}
-              onSelect={handleSelectSlideshow}
-              onCreate={(payload) => createSlideshowMutation.mutate(payload)}
-              onActivate={(id) => activateMutation.mutate(id)}
-              onDelete={(id) => deleteSlideshowMutation.mutate(id)}
-              onCreateDemo={() => createDemoMutation.mutate()}
-            />
-          </Paper>
+        <Drawer
+          opened={showSlideshows}
+          onClose={() => setShowSlideshows(false)}
+          title="Slideshows"
+          position="left"
+          size={320}
+          overlayProps={{ opacity: 0.35, blur: 1 }}
+        >
+          <SlideshowSidebar
+            slideshows={slideshows}
+            selectedId={selectedSlideshowId}
+            templates={templatesQuery.data ?? []}
+            onSelect={(id) => {
+              handleSelectSlideshow(id);
+              setShowSlideshows(false);
+            }}
+            onCreate={(payload) => createSlideshowMutation.mutate(payload)}
+            onActivate={(id) => activateMutation.mutate(id)}
+            onDelete={(id) => deleteSlideshowMutation.mutate(id)}
+            onCreateDemo={() => createDemoMutation.mutate()}
+          />
+        </Drawer>
 
-          <Paper withBorder radius={0} style={{ width: 260, background: '#111725' }}>
-            <ScreensSidebar
-              slideshow={selectedSlideshow}
-              screens={screens}
-              selectedScreenId={selectedScreenId}
-              onSelect={handleSelectScreen}
-              onCreate={(payload) => createScreenMutation.mutate(payload)}
-              onDelete={(id) => deleteScreenMutation.mutate(id)}
-            />
-          </Paper>
+        <Drawer
+          opened={showScreens}
+          onClose={() => setShowScreens(false)}
+          title="Screens"
+          position="left"
+          size={300}
+          overlayProps={{ opacity: 0.35, blur: 1 }}
+        >
+          <ScreensSidebar
+            slideshow={selectedSlideshow}
+            screens={screens}
+            selectedScreenId={selectedScreenId}
+            onSelect={(id) => {
+              handleSelectScreen(id);
+              setShowScreens(false);
+            }}
+            onCreate={(payload) => createScreenMutation.mutate(payload)}
+            onDelete={(id) => deleteScreenMutation.mutate(id)}
+          />
+        </Drawer>
 
-          <Paper withBorder radius={0} style={{ width: 260, background: '#111a2a' }}>
-            <SlidesSidebar
-              slides={slides}
-              selectedSlideId={selectedSlideId}
-              onSelect={handleSelectSlide}
-              onAdd={() => createSlideMutation.mutate()}
-              onDelete={(id) => deleteSlideMutation.mutate(id)}
-              onReorder={handleReorderSlides}
-            />
-          </Paper>
+        <Drawer
+          opened={showSlides}
+          onClose={() => setShowSlides(false)}
+          title="Slides"
+          position="left"
+          size={300}
+          overlayProps={{ opacity: 0.35, blur: 1 }}
+        >
+          <SlidesSidebar
+            slides={slides}
+            selectedSlideId={selectedSlideId}
+            onSelect={(id) => {
+              handleSelectSlide(id);
+              setShowSlides(false);
+            }}
+            onAdd={() => createSlideMutation.mutate()}
+            onDelete={(id) => deleteSlideMutation.mutate(id)}
+            onReorder={handleReorderSlides}
+          />
+        </Drawer>
 
-          <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <Group justify="space-between" px="lg" py="sm" style={{ background: '#0b0f18' }}>
+        <Box
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0
+          }}
+        >
+          <Group
+            justify="space-between"
+            px="lg"
+            py="sm"
+            style={{ background: '#0b0f18', flex: '0 0 auto' }}
+          >
               <Group>
+                <Button size="xs" variant="light" onClick={() => setShowSlideshows(true)}>
+                  Slideshows
+                </Button>
+                <Button size="xs" variant="light" onClick={() => setShowScreens(true)} disabled={!selectedSlideshowId}>
+                  Screens
+                </Button>
+                <Button size="xs" variant="light" onClick={() => setShowSlides(true)} disabled={!selectedScreenId}>
+                  Slides
+                </Button>
                 <Button size="xs" onClick={handleAddLabel} disabled={!selectedSlideId}>
                   Add Label
                 </Button>
@@ -573,32 +630,35 @@ export default function EditorShell() {
               </Group>
               <Group>
                 <Switch
-                  label="Snap to 10px grid"
+                  label="Snap to 25px grid"
                   checked={snapToGrid}
                   onChange={(event) => setSnapToGrid(event.currentTarget.checked)}
                 />
                 {isDirty ? <Text size="xs" c="yellow">Unsaved changes</Text> : null}
               </Group>
-            </Group>
+          </Group>
 
-            <Group align="stretch" gap={0} style={{ flex: 1 }}>
-              <Box style={{ flex: 1, padding: 24 }}>
-                {selectedScreen ? (
-                  <KonvaStage
-                    screen={selectedScreen}
-                    slide={selectedSlide}
-                    selectedElementId={selectedElementId}
-                    onSelectElement={setSelectedElementId}
-                    onElementCommit={handleElementCommit}
-                  />
-                ) : (
-                  <Paper p="xl" radius="md" withBorder>
-                    <Text c="dimmed">Select a screen to start editing.</Text>
-                  </Paper>
-                )}
-              </Box>
-              <Divider orientation="vertical" />
-              <ScrollArea style={{ width: 320, padding: 16 }}>
+          <Group align="stretch" gap={0} style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+            <Box style={{ flex: 1, padding: 24, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+              {selectedScreen ? (
+                <KonvaStage
+                  screen={selectedScreen}
+                  slide={selectedSlide}
+                  selectedElementId={selectedElementId}
+                  onSelectElement={setSelectedElementId}
+                  onElementCommit={handleElementCommit}
+                  showGrid={snapToGrid}
+                  gridSize={gridSize}
+                />
+              ) : (
+                <Paper p="xl" radius="md" withBorder>
+                  <Text c="dimmed">Select a screen to start editing.</Text>
+                </Paper>
+              )}
+            </Box>
+            <Divider orientation="vertical" />
+            <Box style={{ width: 320, minHeight: 0 }}>
+              <ScrollArea style={{ height: '100%', padding: 16 }}>
                 <Stack gap="lg">
                   <SlideshowPropsPanel
                     slideshow={selectedSlideshow}
@@ -609,9 +669,9 @@ export default function EditorShell() {
                   <ElementPropsPanel element={selectedElement} onChange={handleElementChange} />
                 </Stack>
               </ScrollArea>
-            </Group>
-          </Box>
-        </Group>
+            </Box>
+          </Group>
+        </Box>
       </AppShell.Main>
       {(slideshowsQuery.isLoading || screensQuery.isLoading || slidesQuery.isLoading) && (
         <Box style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>

@@ -82,7 +82,18 @@ a {
 }
 
 .editor-shell {
-  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.editor-shell .mantine-AppShell-main {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.editor-shell .mantine-ScrollArea-root,
+.editor-shell .mantine-ScrollArea-viewport {
+  height: 100%;
 }
 
 .editor-canvas {
@@ -95,5 +106,5 @@ a {
 .grid-background {
   background-image: linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
-  background-size: 10px 10px;
+  background-size: 25px 25px;
 }

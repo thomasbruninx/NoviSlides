@@ -18,8 +18,9 @@ npm install
 
 2. Configure the database (SQLite by default)
 
-```bash
-# .env already contains DATABASE_URL="file:./prisma/dev.db"
+create a `.env` file in the root with the following content:
+```
+DATABASE_URL="file:./prisma/dev.db"
 ```
 
 3. Run Prisma migrations
@@ -44,9 +45,9 @@ npm run dev
 Use the **Create Demo** button in the editor. It creates a multi-screen slideshow with `main` and `side` screens.
 
 ## Viewer Endpoints
-- `GET /show` — active slideshow, default screen
-- `GET /show/[slideshowId]` — specific slideshow, default screen
-- `GET /show/[slideshowId]/screen/[screenKey]` — specific screen
+- `GET /show` active slideshow, default screen
+- `GET /show/[slideshowId]` specific slideshow, default screen
+- `GET /show/[slideshowId]/screen/[screenKey]` specific screen
 
 If no active slideshow exists, the viewer shows a friendly empty state.
 
@@ -68,8 +69,8 @@ New slideshows and screens default to **1920 x 540**. You can override width/hei
 - Playwright smoke test: `npm run test:e2e`
 
 ## Project Structure
-- `app/` — routes (viewer, editor, API)
-- `components/` — viewer/editor UI
-- `lib/` — services, repositories, templates, validation, utils
-- `prisma/` — schema and migrations
-- `public/uploads/` — uploaded assets
+- `app/` routes (viewer, editor, API)
+- `components/` viewer/editor UI
+- `lib/` services, repositories, templates, validation, utils
+- `prisma/` schema and migrations
+- `public/uploads/` uploaded assets
