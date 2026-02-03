@@ -639,7 +639,7 @@ export default function EditorShell() {
           </Group>
 
           <Group align="stretch" gap={0} style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
-            <Box style={{ flex: 1, padding: 24, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+            <Box style={{ flex: 1, padding: 24, minHeight: 0, minWidth: 0, overflow: 'hidden', height: 'calc(100vh - 48px)' }}>
               {selectedScreen ? (
                 <KonvaStage
                   screen={selectedScreen}
@@ -658,7 +658,7 @@ export default function EditorShell() {
             </Box>
             <Divider orientation="vertical" />
             <Box style={{ width: 320, minHeight: 0 }}>
-              <ScrollArea style={{ height: '100%', padding: 16 }}>
+              <ScrollArea style={{ height: 'calc(100vh - 48px)', padding: 16 }}>
                 <Stack gap="lg">
                   <SlideshowPropsPanel
                     slideshow={selectedSlideshow}

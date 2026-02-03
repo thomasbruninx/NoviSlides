@@ -2,6 +2,6 @@ node_modules
 .next
 .env
 .env.local
-prisma/prisma/dev.db
 public/uploads/*
 !public/uploads/.keep
+prisma/prisma/*
