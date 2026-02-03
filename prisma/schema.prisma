@@ -1,0 +1,89 @@
+// Prisma schema for NoviSlides
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Slideshow {
+  id                 String   @id @default(cuid())
+  name               String
+  isActive           Boolean  @default(false)
+  defaultAutoSlideMs Int      @default(5000)
+  revealTransition   String   @default("slide")
+  loop               Boolean  @default(true)
+  controls           Boolean  @default(true)
+  defaultScreenKey   String   @default("main")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  screens            Screen[]
+}
+
+model Screen {
+  id          String   @id @default(cuid())
+  slideshowId String
+  key         String
+  width       Int
+  height      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  slideshow Slideshow @relation(fields: [slideshowId], references: [id], onDelete: Cascade)
+  slides    Slide[]
+
+  @@unique([slideshowId, key])
+}
+
+model Slide {
+  id                   String   @id @default(cuid())
+  screenId             String
+  orderIndex           Int
+  title                String?
+  autoSlideMsOverride  Int?
+  backgroundColor      String?
+  backgroundImagePath  String?
+  transitionOverride   String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  screen   Screen       @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  elements SlideElement[]
+
+  @@index([screenId])
+}
+
+model SlideElement {
+  id        String   @id @default(cuid())
+  slideId   String
+  type      String
+  x         Float
+  y         Float
+  width     Float
+  height    Float
+  rotation  Float   @default(0)
+  opacity   Float   @default(1)
+  zIndex    Int     @default(0)
+  animation String  @default("none")
+  dataJson  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slide Slide @relation(fields: [slideId], references: [id], onDelete: Cascade)
+
+  @@index([slideId])
+}
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  path         String
+  originalName String
+  mimeType     String
+  width        Int
+  height       Int
+  createdAt    DateTime @default(now())
+}

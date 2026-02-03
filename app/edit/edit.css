@@ -1,0 +1,7 @@
+.editor-scope .editor-canvas,
+.editor-scope .editor-canvas *,
+.editor-scope .konvajs-content,
+.editor-scope canvas {
+  animation: none !important;
+  transition: none !important;
+}

@@ -1,0 +1,46 @@
+{
+  "name": "novislides",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@mantine/core": "^7.12.2",
+    "@mantine/hooks": "^7.12.2",
+    "@mantine/notifications": "^7.12.2",
+    "@prisma/client": "^5.18.0",
+    "@tanstack/react-query": "^5.51.6",
+    "clsx": "^2.1.1",
+    "image-size": "^1.1.1",
+    "konva": "^9.3.6",
+    "next": "14.2.7",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-konva": "^18.2.10",
+    "reveal.js": "^5.1.0",
+    "use-image": "^1.0.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.7",
+    "prisma": "^5.18.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

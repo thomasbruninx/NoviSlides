@@ -1,0 +1,96 @@
+'use client';
+
+import { useCallback } from 'react';
+import { Text, Image as KonvaImage } from 'react-konva';
+import useImage from 'use-image';
+import type Konva from 'konva';
+import type { SlideElementDto } from '@/lib/types';
+
+export default function ElementRenderer({
+  element,
+  isSelected,
+  registerRef,
+  onSelect,
+  onCommit
+}: {
+  element: SlideElementDto;
+  isSelected: boolean;
+  registerRef: (node: Konva.Node | null) => void;
+  onSelect: () => void;
+  onCommit: (attrs: Partial<SlideElementDto>) => void;
+}) {
+  const [image] = useImage((element.dataJson as Record<string, unknown>).path as string);
+
+  const commonProps = {
+    x: element.x,
+    y: element.y,
+    width: element.width,
+    height: element.height,
+    rotation: element.rotation,
+    opacity: element.opacity,
+    draggable: true,
+    onClick: (event: Konva.KonvaEventObject<MouseEvent>) => {
+      event.cancelBubble = true;
+      onSelect();
+    },
+    onTap: (event: Konva.KonvaEventObject<TouchEvent>) => {
+      event.cancelBubble = true;
+      onSelect();
+    },
+    onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => {
+      onCommit({ x: event.target.x(), y: event.target.y() });
+    },
+    onTransformEnd: (event: Konva.KonvaEventObject<Event>) => {
+      const node = event.target;
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      node.scaleX(1);
+      node.scaleY(1);
+
+      const width = Math.max(10, node.width() * scaleX);
+      const height = Math.max(10, node.height() * scaleY);
+
+      onCommit({
+        x: node.x(),
+        y: node.y(),
+        width,
+        height,
+        rotation: node.rotation()
+      });
+    }
+  };
+
+  const refCallback = useCallback(
+    (node: Konva.Node | null) => {
+      registerRef(node);
+    },
+    [registerRef]
+  );
+
+  if (element.type === 'label') {
+    const data = element.dataJson as Record<string, unknown>;
+    return (
+      <Text
+        ref={refCallback}
+        {...commonProps}
+        text={(data.text as string) ?? 'Label'}
+        fontSize={(data.fontSize as number) ?? 32}
+        fontFamily={(data.fontFamily as string) ?? 'Segoe UI, Arial'}
+        fill={(data.color as string) ?? '#ffffff'}
+        align={(data.align as 'left' | 'center' | 'right') ?? 'left'}
+        stroke={isSelected ? '#54b3ff' : undefined}
+        strokeWidth={isSelected ? 1 : 0}
+      />
+    );
+  }
+
+  return (
+    <KonvaImage
+      ref={refCallback}
+      {...commonProps}
+      image={image}
+      stroke={isSelected ? '#54b3ff' : undefined}
+      strokeWidth={isSelected ? 1 : 0}
+    />
+  );
+}
