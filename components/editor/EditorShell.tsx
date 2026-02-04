@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppShell,
   Box,
@@ -19,7 +19,6 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MediaAssetDto, ScreenDto, SlideDto, SlideElementDto, SlideshowDto, TemplateSummary } from '@/lib/types';
 import { apiFetch } from '@/lib/utils/api';
-import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { resolveMediaPath } from '@/lib/utils/media';
 import SlideshowSidebar from './SlideshowSidebar';
 import ScreensSidebar from './ScreensSidebar';
@@ -38,7 +37,12 @@ const defaultLabelData: SlideElementDto['dataJson'] = {
   align: 'left'
 };
 
+const stripUndefined = <T extends Record<string, unknown>>(attrs: T): Partial<T> => {
+  return Object.fromEntries(Object.entries(attrs).filter(([, value]) => value !== undefined)) as Partial<T>;
+};
+
 export default function EditorShell() {
+  const SAVE_DELAY_MS = 15000;
   const queryClient = useQueryClient();
   const [selectedSlideshowId, setSelectedSlideshowId] = useState<string | null>(null);
   const [selectedScreenId, setSelectedScreenId] = useState<string | null>(null);
@@ -59,6 +63,15 @@ export default function EditorShell() {
   >(null);
   const undoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
   const redoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
+  const pendingSlideUpdatesRef = useRef<Map<string, Partial<SlideDto>>>(new Map());
+  const pendingElementUpdatesRef = useRef<Map<string, Partial<SlideElementDto>>>(new Map());
+  const pendingSlideshowUpdatesRef = useRef<Map<string, Partial<SlideshowDto>>>(new Map());
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const saveDeadlineRef = useRef<number | null>(null);
+  const flushPendingSavesRef = useRef<() => void>(() => {});
+  const [saveCountdownMs, setSaveCountdownMs] = useState<number | null>(null);
+  const editVersionRef = useRef(0);
 
   const templatesQuery = useQuery({
     queryKey: ['templates'],
@@ -244,12 +257,7 @@ export default function EditorShell() {
         method: 'PUT',
         body: JSON.stringify(attrs)
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
-      setIsDirty(false);
-    },
     onError: (error: Error) => {
-      setIsDirty(false);
       notifications.show({ color: 'red', message: error.message });
     }
   });
@@ -260,12 +268,7 @@ export default function EditorShell() {
         method: 'PUT',
         body: JSON.stringify(attrs)
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slideshows'] });
-      setIsDirty(false);
-    },
     onError: (error: Error) => {
-      setIsDirty(false);
       notifications.show({ color: 'red', message: error.message });
     }
   });
@@ -276,12 +279,7 @@ export default function EditorShell() {
         method: 'PUT',
         body: JSON.stringify(attrs)
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
-      setIsDirty(false);
-    },
     onError: (error: Error) => {
-      setIsDirty(false);
       notifications.show({ color: 'red', message: error.message });
     }
   });
@@ -341,37 +339,6 @@ export default function EditorShell() {
     };
   };
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return;
-      }
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
-        event.preventDefault();
-        deleteElementMutation.mutate(selectedElementId);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        const last = undoStack.current.pop();
-        if (last) {
-          redoStack.current.push(last);
-          updateElementMutation.mutate({ id: last.id, attrs: last.prev });
-        }
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
-        event.preventDefault();
-        const last = redoStack.current.pop();
-        if (last) {
-          undoStack.current.push(last);
-          updateElementMutation.mutate({ id: last.id, attrs: last.prev });
-        }
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [selectedElementId, deleteElementMutation, updateElementMutation]);
-
   const updateSlideLocal = (slideId: string, attrs: Partial<SlideDto>) => {
     queryClient.setQueryData<SlideDto[]>(['slides', selectedScreenId], (current) => {
       if (!current) return current;
@@ -388,7 +355,7 @@ export default function EditorShell() {
     });
   };
 
-  const updateElementLocal = (elementId: string, attrs: Partial<SlideElementDto>) => {
+  const updateElementLocal = useCallback((elementId: string, attrs: Partial<SlideElementDto>) => {
     queryClient.setQueryData<SlideDto[]>(['slides', selectedScreenId], (current) => {
       if (!current) return current;
       return current.map((slide) => {
@@ -401,18 +368,234 @@ export default function EditorShell() {
         };
       });
     });
-  };
+  }, [queryClient, selectedScreenId, selectedSlideId]);
 
-  const debouncedSlideCommit = useDebouncedCallback((slideId: string, attrs: Partial<SlideDto>) => {
-    updateSlideMutation.mutate({ id: slideId, attrs });
-  }, 400);
+  const markDirty = useCallback(() => {
+    editVersionRef.current += 1;
+    setIsDirty(true);
+  }, []);
 
-  const debouncedElementCommit = useDebouncedCallback(
-    (elementId: string, attrs: Partial<SlideElementDto>) => {
-      updateElementMutation.mutate({ id: elementId, attrs });
+  const clearSaveTimers = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    if (saveIntervalRef.current) {
+      clearInterval(saveIntervalRef.current);
+      saveIntervalRef.current = null;
+    }
+  }, []);
+
+  const updateCountdown = useCallback(() => {
+    if (!saveDeadlineRef.current) {
+      setSaveCountdownMs(null);
+      return;
+    }
+    const remaining = Math.max(0, saveDeadlineRef.current - Date.now());
+    setSaveCountdownMs(remaining);
+  }, []);
+
+  const scheduleSave = useCallback(() => {
+    saveDeadlineRef.current = Date.now() + SAVE_DELAY_MS;
+    setSaveCountdownMs(SAVE_DELAY_MS);
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      void flushPendingSavesRef.current();
+    }, SAVE_DELAY_MS);
+
+    if (!saveIntervalRef.current) {
+      saveIntervalRef.current = setInterval(updateCountdown, 250);
+    }
+  }, [updateCountdown, SAVE_DELAY_MS]);
+
+  const flushPendingSaves = useCallback(async (): Promise<void> => {
+    const slideUpdates = Array.from(pendingSlideUpdatesRef.current.entries());
+    const elementUpdates = Array.from(pendingElementUpdatesRef.current.entries());
+    const slideshowUpdates = Array.from(pendingSlideshowUpdatesRef.current.entries());
+
+    pendingSlideUpdatesRef.current.clear();
+    pendingElementUpdatesRef.current.clear();
+    pendingSlideshowUpdatesRef.current.clear();
+
+    clearSaveTimers();
+    saveDeadlineRef.current = null;
+    setSaveCountdownMs(null);
+
+    if (!slideUpdates.length && !elementUpdates.length && !slideshowUpdates.length) {
+      return;
+    }
+
+    const flushVersion = editVersionRef.current;
+    const operations: Array<{
+      kind: 'slide' | 'element' | 'slideshow';
+      id: string;
+      attrs: Partial<SlideDto> | Partial<SlideElementDto> | Partial<SlideshowDto>;
+      promise: Promise<unknown>;
+    }> = [];
+
+    slideUpdates.forEach(([id, attrs]) => {
+      operations.push({
+        kind: 'slide',
+        id,
+        attrs,
+        promise: updateSlideMutation.mutateAsync({ id, attrs })
+      });
+    });
+
+    elementUpdates.forEach(([id, attrs]) => {
+      operations.push({
+        kind: 'element',
+        id,
+        attrs,
+        promise: updateElementMutation.mutateAsync({ id, attrs })
+      });
+    });
+
+    slideshowUpdates.forEach(([id, attrs]) => {
+      operations.push({
+        kind: 'slideshow',
+        id,
+        attrs,
+        promise: updateSlideshowMutation.mutateAsync({ id, attrs })
+      });
+    });
+
+    const results = await Promise.allSettled(operations.map((op) => op.promise));
+    const failed = operations.filter((_, index) => results[index]?.status === 'rejected');
+    const hadError = failed.length > 0;
+
+    if (hadError) {
+      failed.forEach((op) => {
+        if (op.kind === 'slide') {
+          const existing = pendingSlideUpdatesRef.current.get(op.id) ?? {};
+          pendingSlideUpdatesRef.current.set(op.id, { ...existing, ...(op.attrs as Partial<SlideDto>) });
+        } else if (op.kind === 'element') {
+          const existing = pendingElementUpdatesRef.current.get(op.id) ?? {};
+          const next: Partial<SlideElementDto> = { ...existing, ...(op.attrs as Partial<SlideElementDto>) };
+          if (
+            existing.dataJson &&
+            (op.attrs as Partial<SlideElementDto>).dataJson &&
+            typeof existing.dataJson === 'object' &&
+            typeof (op.attrs as Partial<SlideElementDto>).dataJson === 'object'
+          ) {
+            next.dataJson = {
+              ...(existing.dataJson as Record<string, unknown>),
+              ...((op.attrs as Partial<SlideElementDto>).dataJson as Record<string, unknown>)
+            };
+          }
+          pendingElementUpdatesRef.current.set(op.id, next);
+        } else {
+          const existing = pendingSlideshowUpdatesRef.current.get(op.id) ?? {};
+          pendingSlideshowUpdatesRef.current.set(op.id, { ...existing, ...(op.attrs as Partial<SlideshowDto>) });
+        }
+      });
+      scheduleSave();
+    }
+    const hasNewEdits = editVersionRef.current !== flushVersion;
+    const hasPending =
+      pendingSlideUpdatesRef.current.size > 0 ||
+      pendingElementUpdatesRef.current.size > 0 ||
+      pendingSlideshowUpdatesRef.current.size > 0;
+
+    if (!hadError && !hasNewEdits && !hasPending) {
+      queryClient.invalidateQueries({ queryKey: ['slides'] });
+      queryClient.invalidateQueries({ queryKey: ['slideshows'] });
+      setIsDirty(false);
+    }
+  }, [clearSaveTimers, queryClient, scheduleSave, updateElementMutation, updateSlideMutation, updateSlideshowMutation]);
+
+  const queueSlideSave = useCallback(
+    (slideId: string, attrs: Partial<SlideDto>) => {
+      const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideDto>;
+      const existing = pendingSlideUpdatesRef.current.get(slideId) ?? {};
+      pendingSlideUpdatesRef.current.set(slideId, { ...existing, ...sanitized });
+      scheduleSave();
     },
-    200
+    [scheduleSave]
   );
+
+  const queueElementSave = useCallback(
+    (elementId: string, attrs: Partial<SlideElementDto>) => {
+      const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideElementDto>;
+      const existing = pendingElementUpdatesRef.current.get(elementId) ?? {};
+      const merged: Partial<SlideElementDto> = { ...existing, ...sanitized };
+      if (
+        existing.dataJson &&
+        sanitized.dataJson &&
+        typeof existing.dataJson === 'object' &&
+        typeof sanitized.dataJson === 'object'
+      ) {
+        merged.dataJson = {
+          ...(existing.dataJson as Record<string, unknown>),
+          ...(sanitized.dataJson as Record<string, unknown>)
+        };
+      }
+      pendingElementUpdatesRef.current.set(elementId, merged);
+      scheduleSave();
+    },
+    [scheduleSave]
+  );
+
+  const queueSlideshowSave = useCallback(
+    (slideshowId: string, attrs: Partial<SlideshowDto>) => {
+      const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideshowDto>;
+      const existing = pendingSlideshowUpdatesRef.current.get(slideshowId) ?? {};
+      pendingSlideshowUpdatesRef.current.set(slideshowId, { ...existing, ...sanitized });
+      scheduleSave();
+    },
+    [scheduleSave]
+  );
+
+  useEffect(() => {
+    flushPendingSavesRef.current = () => {
+      void flushPendingSaves();
+    };
+  }, [flushPendingSaves]);
+
+  useEffect(() => {
+    return () => {
+      clearSaveTimers();
+    };
+  }, [clearSaveTimers]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
+        event.preventDefault();
+        deleteElementMutation.mutate(selectedElementId);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        const last = undoStack.current.pop();
+        if (last) {
+          redoStack.current.push(last);
+          markDirty();
+          updateElementLocal(last.id, last.prev);
+          queueElementSave(last.id, last.prev);
+        }
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        const last = redoStack.current.pop();
+        if (last) {
+          undoStack.current.push(last);
+          markDirty();
+          updateElementLocal(last.id, last.prev);
+          queueElementSave(last.id, last.prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedElementId, deleteElementMutation, markDirty, queueElementSave, updateElementLocal]);
 
   const handleSelectSlide = (id: string) => {
     if (isDirty && !window.confirm('You have unsaved changes. Continue?')) return;
@@ -437,16 +620,20 @@ export default function EditorShell() {
 
   const handleSlideChange = (attrs: Partial<SlideDto>) => {
     if (!selectedSlide) return;
-    setIsDirty(true);
-    updateSlideLocal(selectedSlide.id, attrs);
-    debouncedSlideCommit(selectedSlide.id, attrs);
+    const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideDto>;
+    if (!Object.keys(sanitized).length) return;
+    markDirty();
+    updateSlideLocal(selectedSlide.id, sanitized);
+    queueSlideSave(selectedSlide.id, sanitized);
   };
 
   const handleElementChange = (attrs: Partial<SlideElementDto>) => {
     if (!selectedElement) return;
-    setIsDirty(true);
-    updateElementLocal(selectedElement.id, attrs);
-    debouncedElementCommit(selectedElement.id, attrs);
+    const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideElementDto>;
+    if (!Object.keys(sanitized).length) return;
+    markDirty();
+    updateElementLocal(selectedElement.id, sanitized);
+    queueElementSave(selectedElement.id, sanitized);
   };
 
   const handleElementCommit = (id: string, attrs: Partial<SlideElementDto>) => {
@@ -461,6 +648,7 @@ export default function EditorShell() {
         height: snap(attrs.height)
       };
     }
+    const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideElementDto>;
     const currentElement = selectedSlide?.elements?.find((item) => item.id === id);
     if (currentElement) {
       undoStack.current.push({
@@ -479,9 +667,9 @@ export default function EditorShell() {
         }
       });
     }
-    setIsDirty(true);
-    updateElementLocal(id, attrs);
-    updateElementMutation.mutate({ id, attrs });
+    markDirty();
+    updateElementLocal(id, sanitized);
+    queueElementSave(id, sanitized);
   };
 
   const handleAddLabel = () => {
@@ -581,9 +769,11 @@ export default function EditorShell() {
 
   const handleSlideshowChange = (attrs: Partial<SlideshowDto>) => {
     if (!selectedSlideshow) return;
-    setIsDirty(true);
-    updateSlideshowLocal(selectedSlideshow.id, attrs);
-    updateSlideshowMutation.mutate({ id: selectedSlideshow.id, attrs });
+    const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideshowDto>;
+    if (!Object.keys(sanitized).length) return;
+    markDirty();
+    updateSlideshowLocal(selectedSlideshow.id, sanitized);
+    queueSlideshowSave(selectedSlideshow.id, sanitized);
   };
 
   return (
@@ -698,6 +888,11 @@ export default function EditorShell() {
                   checked={snapToGrid}
                   onChange={(event) => setSnapToGrid(event.currentTarget.checked)}
                 />
+                {saveCountdownMs !== null ? (
+                  <Text size="xs" c="cyan">
+                    Saving in {Math.max(1, Math.ceil(saveCountdownMs / 1000))}s
+                  </Text>
+                ) : null}
                 {isDirty ? <Text size="xs" c="yellow">Unsaved changes</Text> : null}
               </Group>
           </Group>
