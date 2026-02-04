@@ -28,7 +28,7 @@ export default function Providers({ children }: { children: ReactNode }) {
         }}
         defaultColorScheme="dark"
       >
-        <Notifications position="top-right" />
+        <Notifications position="bottom-left" />
         {children}
       </MantineProvider>
     </QueryClientProvider>
