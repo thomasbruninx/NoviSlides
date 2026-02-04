@@ -14,11 +14,13 @@ const transitions = [
 export default function SlideshowPropsPanel({
   slideshow,
   screenKeys,
-  onChange
+  onChange,
+  showTitle = true
 }: {
   slideshow: SlideshowDto | null;
   screenKeys: string[];
   onChange: (attrs: Partial<SlideshowDto>) => void;
+  showTitle?: boolean;
 }) {
   if (!slideshow) {
     return null;
@@ -26,7 +28,7 @@ export default function SlideshowPropsPanel({
 
   return (
     <Stack gap="sm">
-      <Text fw={700}>Slideshow</Text>
+      {showTitle ? <Text fw={700}>Slideshow</Text> : null}
       <NumberInput
         label="Default auto-slide (ms)"
         value={slideshow.defaultAutoSlideMs}

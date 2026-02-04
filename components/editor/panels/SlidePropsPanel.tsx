@@ -16,16 +16,18 @@ const transitions = [
 export default function SlidePropsPanel({
   slide,
   onChange,
-  onChooseBackgroundImage
+  onChooseBackgroundImage,
+  showTitle = true
 }: {
   slide: SlideDto | null;
   onChange: (attrs: Partial<SlideDto>) => void;
   onChooseBackgroundImage?: () => void;
+  showTitle?: boolean;
 }) {
   if (!slide) {
     return (
       <Stack gap="xs">
-        <Text fw={700}>Slide</Text>
+        {showTitle ? <Text fw={700}>Slide</Text> : null}
         <Text size="sm" c="dimmed">
           Select a slide to edit its properties.
         </Text>
@@ -35,7 +37,7 @@ export default function SlidePropsPanel({
 
   return (
     <Stack gap="sm">
-      <Text fw={700}>Slide</Text>
+      {showTitle ? <Text fw={700}>Slide</Text> : null}
       <TextInput
         label="Title"
         value={slide.title ?? ''}

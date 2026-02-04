@@ -15,16 +15,18 @@ const animationOptions: Array<{ value: SlideElementAnimation; label: string }> =
 export default function ElementPropsPanel({
   element,
   onChange,
-  onChooseImage
+  onChooseImage,
+  showTitle = true
 }: {
   element: SlideElementDto | null;
   onChange: (attrs: Partial<SlideElementDto>) => void;
   onChooseImage?: () => void;
+  showTitle?: boolean;
 }) {
   if (!element) {
     return (
       <Stack gap="xs">
-        <Text fw={700}>Element</Text>
+        {showTitle ? <Text fw={700}>Element</Text> : null}
         <Text size="sm" c="dimmed">
           Select an element to edit its properties.
         </Text>
@@ -43,7 +45,7 @@ export default function ElementPropsPanel({
 
   return (
     <Stack gap="sm">
-      <Text fw={700}>Element</Text>
+      {showTitle ? <Text fw={700}>Element</Text> : null}
       <NumberInput label="X" value={element.x} onChange={(val) => onChange({ x: toNumber(val) })} />
       <NumberInput label="Y" value={element.y} onChange={(val) => onChange({ y: toNumber(val) })} />
       <NumberInput label="Width" value={element.width} onChange={(val) => onChange({ width: toNumber(val) })} />

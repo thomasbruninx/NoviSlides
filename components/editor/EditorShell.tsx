@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppShell,
+  Accordion,
   Box,
   Button,
   Drawer,
@@ -972,37 +973,55 @@ export default function EditorShell() {
             <Divider orientation="vertical" />
             <Box style={{ width: 320, minHeight: 0 }}>
               <ScrollArea style={{ height: 'calc(100vh - 48px)', padding: 16 }}>
-                <Stack gap="lg">
-                  <SlideshowPropsPanel
-                    slideshow={selectedSlideshow}
-                    screenKeys={screens.map((screen) => screen.key)}
-                    onChange={handleSlideshowChange}
-                  />
-                  <SlidePropsPanel
-                    slide={selectedSlide}
-                    onChange={handleSlideChange}
-                    onChooseBackgroundImage={
-                      selectedSlideId
-                        ? () => {
-                            setMediaIntent({ type: 'slide-background' });
-                            setShowMediaLibrary(true);
-                          }
-                        : undefined
-                    }
-                  />
-                  <ElementPropsPanel
-                    element={selectedElement}
-                    onChange={handleElementChange}
-                    onChooseImage={
-                      selectedElement && selectedElement.type === 'image'
-                        ? () => {
-                            setMediaIntent({ type: 'element-image', elementId: selectedElement.id });
-                            setShowMediaLibrary(true);
-                          }
-                        : undefined
-                    }
-                  />
-                </Stack>
+                <Accordion multiple defaultValue={['slideshow', 'slide', 'element']} variant="contained">
+                  <Accordion.Item value="slideshow">
+                    <Accordion.Control>Slideshow</Accordion.Control>
+                    <Accordion.Panel>
+                      <SlideshowPropsPanel
+                        slideshow={selectedSlideshow}
+                        screenKeys={screens.map((screen) => screen.key)}
+                        onChange={handleSlideshowChange}
+                        showTitle={false}
+                      />
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                  <Accordion.Item value="slide">
+                    <Accordion.Control>Slide</Accordion.Control>
+                    <Accordion.Panel>
+                      <SlidePropsPanel
+                        slide={selectedSlide}
+                        onChange={handleSlideChange}
+                        onChooseBackgroundImage={
+                          selectedSlideId
+                            ? () => {
+                                setMediaIntent({ type: 'slide-background' });
+                                setShowMediaLibrary(true);
+                              }
+                            : undefined
+                        }
+                        showTitle={false}
+                      />
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                  <Accordion.Item value="element">
+                    <Accordion.Control>Element</Accordion.Control>
+                    <Accordion.Panel>
+                      <ElementPropsPanel
+                        element={selectedElement}
+                        onChange={handleElementChange}
+                        onChooseImage={
+                          selectedElement && selectedElement.type === 'image'
+                            ? () => {
+                                setMediaIntent({ type: 'element-image', elementId: selectedElement.id });
+                                setShowMediaLibrary(true);
+                              }
+                            : undefined
+                        }
+                        showTitle={false}
+                      />
+                    </Accordion.Panel>
+                  </Accordion.Item>
+                </Accordion>
               </ScrollArea>
             </Box>
           </Group>
