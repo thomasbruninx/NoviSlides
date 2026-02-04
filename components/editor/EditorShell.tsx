@@ -13,7 +13,8 @@ import {
   ScrollArea,
   Stack,
   Switch,
-  Text
+  Text,
+  Tooltip
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -279,6 +280,13 @@ export default function EditorShell() {
         method: 'PUT',
         body: JSON.stringify(attrs)
       }),
+    onError: (error: Error) => {
+      notifications.show({ color: 'red', message: error.message });
+    }
+  });
+
+  const refreshScreenMutation = useMutation({
+    mutationFn: (id: string) => apiFetch<{ revision: number }>(`/api/screens/${id}/refresh`, { method: 'POST' }),
     onError: (error: Error) => {
       notifications.show({ color: 'red', message: error.message });
     }
@@ -776,6 +784,22 @@ export default function EditorShell() {
     queueSlideshowSave(selectedSlideshow.id, sanitized);
   };
 
+  const handleManualSave = () => {
+    const hasPending =
+      pendingSlideUpdatesRef.current.size > 0 ||
+      pendingElementUpdatesRef.current.size > 0 ||
+      pendingSlideshowUpdatesRef.current.size > 0;
+
+    if (hasPending) {
+      flushPendingSavesRef.current();
+      return;
+    }
+
+    if (selectedScreenId) {
+      refreshScreenMutation.mutate(selectedScreenId);
+    }
+  };
+
   return (
     <AppShell padding={0} className="editor-shell">
       <AppShell.Main>
@@ -888,6 +912,21 @@ export default function EditorShell() {
                   checked={snapToGrid}
                   onChange={(event) => setSnapToGrid(event.currentTarget.checked)}
                 />
+                <Tooltip
+                  label="Saves pending changes, or refreshes viewers if none are pending."
+                  withArrow
+                >
+                  <span style={{ display: 'inline-block' }}>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      onClick={handleManualSave}
+                      disabled={!selectedScreenId}
+                    >
+                      Save / Refresh
+                    </Button>
+                  </span>
+                </Tooltip>
                 {saveCountdownMs !== null ? (
                   <Text size="xs" c="cyan">
                     Saving in {Math.max(1, Math.ceil(saveCountdownMs / 1000))}s
