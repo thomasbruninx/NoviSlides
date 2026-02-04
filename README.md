@@ -1,6 +1,6 @@
 # NoviSlides
 
-A production-ready multi-screen slideshow editor and viewer built with Next.js App Router, Mantine, Reveal.js, Konva, and SQLite (Prisma).
+A lightweight digital signage content provider, built as a full-stack web application using Next.js, Mantine, Reveal.js, Konva, and SQLite (Prisma).
 
 ## Features
 - Viewer endpoints for active and specific slideshows/screens
@@ -42,6 +42,22 @@ npm run prisma:migrate
 npm run dev
 ```
 
+Important: SSE doesn't work in development mode, so live refresh of the viewer doesn't get triggered when saving changes in the editor
+
+## Setup
+Deploy a production-ready version
+1. Run the build command
+
+```bash
+npm run build
+```
+
+2. Start the production server
+
+```bash
+npm run start
+```
+
 ## Using the Editor
 - Open `http://localhost:3000/edit`
 - Create a slideshow (choose a template or accept the default)
@@ -60,8 +76,7 @@ Use the **Create Demo** button in the editor. It creates a multi-screen slidesho
 If no active slideshow exists, the viewer shows a friendly empty state.
 
 ### Live refresh (SSE)
-Viewer pages subscribe to `GET /api/events?slideshowId=...&screenKey=...` and refresh when the
-screen revision changes. If SSE fails, the viewer falls back to polling every ~15 seconds.
+Viewer pages subscribe to `GET /api/events?slideshowId=...&screenKey=...` and refresh when the screen revision changes. If SSE fails, the viewer falls back to polling every ~15 seconds.
 
 Note: the current EventHub is in-memory, so live refresh only works within a single server instance.
 
@@ -87,8 +102,7 @@ Media assets are stored under `public/uploads/YYYY/MM/uuid.ext`.
 
 Video playback notes:
 - Videos render in the viewer via a standard `<video>` element.
-- Autoplay, loop, muted, and controls are configured per element.
-- The editor uses a placeholder box for videos to keep Konva performant.
+- Autoplay, loop, muted, and controls are configured per element. (however audio playback is limited due to policies set by modern browsers)
 
 ## Tests
 - Unit test (Vitest): `npm run test:unit`
@@ -100,3 +114,7 @@ Video playback notes:
 - `lib/` services, repositories, templates, validation, utils
 - `prisma/` schema and migrations
 - `public/uploads/` uploaded assets
+
+## Disclaimer on the use of AI
+
+This project has been developed with the assistance of AI tools (notably GitHub Copilot and ChatGPT Codex) to help speed up development and provide code suggestions. While these tools can be helpful, they may also introduce code that is suboptimal, insecure, or incorrect. Which I experienced firsthand while reviewing and debugging the generated code. I don't blindly trust AI-generated code, and neither should you. Always review, test, and validate any code produced with the help of AI tools.
