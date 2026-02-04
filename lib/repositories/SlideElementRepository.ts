@@ -24,4 +24,15 @@ export class SlideElementRepository {
       )
     );
   }
+
+  async countByMediaAssetId(mediaAssetId: string) {
+    const marker = `\"mediaAssetId\":\"${mediaAssetId}\"`;
+    return prisma.slideElement.count({
+      where: {
+        dataJson: {
+          contains: marker
+        }
+      }
+    });
+  }
 }

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@mantine/core": "^7.12.2",
+    "@mantine/dropzone": "^7.17.8",
     "@mantine/hooks": "^7.12.2",
     "@mantine/notifications": "^7.12.2",
     "@prisma/client": "^5.18.0",

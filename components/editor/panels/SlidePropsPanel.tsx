@@ -1,7 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { Stack, Text, TextInput, NumberInput, Select, ColorInput } from '@mantine/core';
+import { Stack, Text, TextInput, NumberInput, Select, ColorInput, Group, Button, Box } from '@mantine/core';
 import type { SlideDto } from '@/lib/types';
+import { resolveMediaPath } from '@/lib/utils/media';
 
 const transitions = [
   { value: 'slide', label: 'Slide' },
@@ -13,10 +15,12 @@ const transitions = [
 
 export default function SlidePropsPanel({
   slide,
-  onChange
+  onChange,
+  onChooseBackgroundImage
 }: {
   slide: SlideDto | null;
   onChange: (attrs: Partial<SlideDto>) => void;
+  onChooseBackgroundImage?: () => void;
 }) {
   if (!slide) {
     return (
@@ -42,14 +46,42 @@ export default function SlidePropsPanel({
         value={slide.backgroundColor ?? '#0b0f18'}
         onChange={(value) => onChange({ backgroundColor: value })}
       />
-      <TextInput
-        label="Background image path"
-        value={slide.backgroundImagePath ?? ''}
-        onChange={(event) => {
-          const value = event.currentTarget.value;
-          onChange({ backgroundImagePath: value.trim() ? value : null });
-        }}
-      />
+      <Stack gap={6}>
+        <Text size="sm" fw={500}>
+          Background image
+        </Text>
+        {slide.backgroundImagePath ? (
+          <Box
+            style={{
+              width: '100%',
+              aspectRatio: '16 / 9',
+              borderRadius: 8,
+              overflow: 'hidden',
+              background: '#0b0f18',
+              border: '1px solid #232a3b'
+            }}
+          >
+            <img
+              src={resolveMediaPath(slide.backgroundImagePath)}
+              alt="Background preview"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </Box>
+        ) : null}
+        <Text size="xs" c="dimmed" lineClamp={1}>
+          {slide.backgroundImagePath ?? 'No image selected'}
+        </Text>
+        <Group justify="space-between" align="center">
+          <Button size="xs" variant="light" onClick={onChooseBackgroundImage} disabled={!onChooseBackgroundImage}>
+            Choose image
+          </Button>
+          {slide.backgroundImagePath ? (
+            <Button size="xs" variant="subtle" color="red" onClick={() => onChange({ backgroundImagePath: null })}>
+              Clear
+            </Button>
+          ) : null}
+        </Group>
+      </Stack>
       <NumberInput
         label="Auto-slide override (ms)"
         value={slide.autoSlideMsOverride ?? undefined}

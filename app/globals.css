@@ -74,6 +74,11 @@ a {
   transform-origin: top left;
 }
 
+.slide-element img,
+.slide-element video {
+  display: block;
+}
+
 .fragment.appear {
   opacity: 0;
   transition: opacity 0.6s ease;

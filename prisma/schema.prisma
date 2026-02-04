@@ -82,10 +82,16 @@ model SlideElement {
 
 model MediaAsset {
   id           String   @id @default(cuid())
+  kind         String   @default("image")
   path         String
   originalName String
   mimeType     String
-  width        Int
-  height       Int
+  sizeBytes    Int      @default(0)
+  width        Int?
+  height       Int?
+  durationMs   Int?
   createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([kind])
 }

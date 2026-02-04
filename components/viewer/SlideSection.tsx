@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react';
 import clsx from 'clsx';
-import Image from 'next/image';
+/* eslint-disable @next/next/no-img-element */
 import type { SlideDto, SlideElementDto } from '@/lib/types';
+import { resolveMediaPath } from '@/lib/utils/media';
 
 function getFragmentClass(animation?: string) {
   switch (animation) {
@@ -68,6 +69,9 @@ export default function SlideSection({
           }
 
           const data = element.dataJson as Record<string, unknown>;
+          const isVideo = element.type === 'video';
+          const path = resolveMediaPath(data.path as string | undefined);
+
           return (
             <div
               key={element.id}
@@ -75,15 +79,25 @@ export default function SlideSection({
               data-fragment-index={fragmentIndex}
               style={style}
             >
-              {data.path ? (
-                <Image
-                  src={data.path as string}
-                  alt={(data.originalName as string | undefined) ?? ''}
-                  fill
-                  sizes="100vw"
-                  unoptimized
-                  style={{ objectFit: 'cover' }}
-                />
+              {path ? (
+                isVideo ? (
+                  <video
+                    src={path}
+                    autoPlay={(data.autoplay as boolean | undefined) ?? false}
+                    loop={(data.loop as boolean | undefined) ?? true}
+                    muted={((data.autoplay as boolean | undefined) ?? false) ? true : ((data.muted as boolean | undefined) ?? true)}
+                    controls={(data.controls as boolean | undefined) ?? false}
+                    playsInline
+                    preload="metadata"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <img
+                    src={path}
+                    alt={(data.originalName as string | undefined) ?? ''}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )
               ) : null}
             </div>
           );

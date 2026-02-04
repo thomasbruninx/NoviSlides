@@ -63,7 +63,7 @@ export const reorderSlidesSchema = z.object({
   orderedIds: z.array(z.string().min(1)).min(1)
 });
 
-export const slideElementTypeSchema = z.enum(['image', 'label']);
+export const slideElementTypeSchema = z.enum(['image', 'label', 'video']);
 export const slideElementAnimationSchema = z.enum(['none', 'fade', 'zoom', 'appear']);
 
 export const createElementSchema = z.object({
@@ -88,6 +88,22 @@ export const reorderElementsSchema = z.object({
 });
 
 export const uploadSchema = z.object({
+  filename: z.string().min(1),
+  mimeType: z.string().min(1)
+});
+
+export const mediaKindSchema = z.enum(['image', 'video']);
+export const mediaSortSchema = z.enum(['createdAt_desc', 'createdAt_asc']);
+
+export const mediaListQuerySchema = z.object({
+  q: z.string().optional(),
+  kind: mediaKindSchema.optional(),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(24),
+  sort: mediaSortSchema.default('createdAt_desc')
+});
+
+export const mediaUploadFileSchema = z.object({
   filename: z.string().min(1),
   mimeType: z.string().min(1)
 });

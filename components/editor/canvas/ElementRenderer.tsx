@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Text, Image as KonvaImage } from 'react-konva';
+import { Group, Rect, Text, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import type Konva from 'konva';
 import type { SlideElementDto } from '@/lib/types';
+import { resolveMediaPath } from '@/lib/utils/media';
 
 export default function ElementRenderer({
   element,
@@ -19,7 +20,9 @@ export default function ElementRenderer({
   onSelect: () => void;
   onCommit: (attrs: Partial<SlideElementDto>) => void;
 }) {
-  const [image] = useImage((element.dataJson as Record<string, unknown>).path as string);
+  const rawPath = element.type === 'image' ? ((element.dataJson as Record<string, unknown>).path as string) : '';
+  const imagePath = resolveMediaPath(rawPath);
+  const [image] = useImage(imagePath);
 
   const commonProps = {
     x: element.x,
@@ -81,6 +84,40 @@ export default function ElementRenderer({
         stroke={isSelected ? '#54b3ff' : undefined}
         strokeWidth={isSelected ? 1 : 0}
       />
+    );
+  }
+
+  if (element.type === 'video') {
+    return (
+      <Group ref={refCallback} {...commonProps}>
+        <Rect
+          width={element.width}
+          height={element.height}
+          fill="#101726"
+          stroke={isSelected ? '#54b3ff' : '#2b3447'}
+          strokeWidth={isSelected ? 1 : 1}
+        />
+        <Text
+          text=">"
+          width={element.width}
+          height={element.height - 24}
+          align="center"
+          verticalAlign="middle"
+          fill="#cbd5f5"
+          fontSize={36}
+          fontFamily="Plus Jakarta Sans, Segoe UI, Arial"
+        />
+        <Text
+          text="VIDEO"
+          width={element.width}
+          height={element.height}
+          align="center"
+          verticalAlign="bottom"
+          fill="#cbd5f5"
+          fontSize={14}
+          fontFamily="Plus Jakarta Sans, Segoe UI, Arial"
+        />
+      </Group>
     );
   }
 

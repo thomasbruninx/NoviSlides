@@ -6,6 +6,7 @@ A production-ready multi-screen slideshow editor and viewer built with Next.js A
 - Viewer endpoints for active and specific slideshows/screens
 - Live refresh for viewer devices via SSE with polling fallback
 - WYSIWYG editor with drag/drop, resize, layers, and label editing
+- Media Library with image + video assets
 - Multi-screen decks with locked resolutions (default 1920 x 540)
 - Template system with default starter template
 - SQLite persistence via Prisma
@@ -40,6 +41,7 @@ npm run dev
 - Open `http://localhost:3000/edit`
 - Create a slideshow (choose a template or accept the default)
 - Add screens, slides, and elements
+- Use **Add Media** to upload/select images or videos
 - Activate a slideshow from the left sidebar
 
 ### Create a demo slideshow
@@ -70,6 +72,18 @@ If you create a slideshow without choosing a template, the Default Starter is ap
 
 ## Default Resolution
 New slideshows and screens default to **1920 x 540**. You can override width/height when creating screens.
+
+## Media Library
+Supported formats:
+- Images: `png`, `jpeg/jpg`, `gif`, `webp`, `svg`
+- Videos: `mp4`, `webm`
+
+Media assets are stored under `public/uploads/YYYY/MM/uuid.ext`.
+
+Video playback notes:
+- Videos render in the viewer via a standard `<video>` element.
+- Autoplay, loop, muted, and controls are configured per element.
+- The editor uses a placeholder box for videos to keep Konva performant.
 
 ## Tests
 - Unit test (Vitest): `npm run test:unit`

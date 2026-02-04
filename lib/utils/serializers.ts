@@ -43,7 +43,7 @@ export function toSlideElementDto(element: SlideElement): SlideElementDto {
     }
   }
 
-  const type = (['image', 'label'] as const).includes(element.type as SlideElementType)
+  const type = (['image', 'label', 'video'] as const).includes(element.type as SlideElementType)
     ? (element.type as SlideElementType)
     : 'label';
   const animation = (['none', 'fade', 'zoom', 'appear'] as const).includes(
@@ -63,8 +63,10 @@ export function toSlideElementDto(element: SlideElement): SlideElementDto {
 }
 
 export function toMediaAssetDto(asset: MediaAsset): MediaAssetDto {
+  const kind = asset.kind === 'video' ? 'video' : 'image';
   return {
     ...asset,
+    kind,
     createdAt: asset.createdAt.toISOString()
   };
 }

@@ -1,10 +1,20 @@
-export type SlideElementType = 'image' | 'label';
+export type SlideElementType = 'image' | 'label' | 'video';
 export type SlideElementAnimation = 'none' | 'fade' | 'zoom' | 'appear';
 
 export type SlideElementDataImage = {
   mediaAssetId?: string;
   path?: string;
+  originalName?: string;
   crop?: { x: number; y: number; width: number; height: number };
+};
+
+export type SlideElementDataVideo = {
+  mediaAssetId?: string;
+  path?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  controls?: boolean;
 };
 
 export type SlideElementDataLabel = {
@@ -15,7 +25,7 @@ export type SlideElementDataLabel = {
   align: 'left' | 'center' | 'right';
 };
 
-export type SlideElementData = SlideElementDataImage | SlideElementDataLabel;
+export type SlideElementData = SlideElementDataImage | SlideElementDataVideo | SlideElementDataLabel;
 
 export type SlideElementDto = {
   id: string;
@@ -83,12 +93,23 @@ export type ScreenDeckDto = {
 
 export type MediaAssetDto = {
   id: string;
+  kind: 'image' | 'video';
   path: string;
   originalName: string;
   mimeType: string;
-  width: number;
-  height: number;
+  sizeBytes: number;
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
   createdAt: string;
+};
+
+export type PaginatedResult<T> = {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 };
 
 export type TemplateSummary = {

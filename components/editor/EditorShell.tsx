@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
 import {
   AppShell,
   Box,
@@ -18,9 +17,10 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ScreenDto, SlideDto, SlideElementDto, SlideshowDto, TemplateSummary } from '@/lib/types';
-import { apiFetch, apiFetchForm } from '@/lib/utils/api';
+import type { MediaAssetDto, ScreenDto, SlideDto, SlideElementDto, SlideshowDto, TemplateSummary } from '@/lib/types';
+import { apiFetch } from '@/lib/utils/api';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
+import { resolveMediaPath } from '@/lib/utils/media';
 import SlideshowSidebar from './SlideshowSidebar';
 import ScreensSidebar from './ScreensSidebar';
 import SlidesSidebar from './SlidesSidebar';
@@ -28,6 +28,7 @@ import KonvaStage from './canvas/KonvaStage';
 import SlidePropsPanel from './panels/SlidePropsPanel';
 import ElementPropsPanel from './panels/ElementPropsPanel';
 import SlideshowPropsPanel from './panels/SlideshowPropsPanel';
+import MediaLibraryModal from './media/MediaLibraryModal';
 
 const defaultLabelData: SlideElementDto['dataJson'] = {
   text: 'New label',
@@ -49,9 +50,15 @@ export default function EditorShell() {
   const [showSlideshows, setShowSlideshows] = useState(true);
   const [showScreens, setShowScreens] = useState(false);
   const [showSlides, setShowSlides] = useState(false);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [mediaIntent, setMediaIntent] = useState<
+    | { type: 'add-element' }
+    | { type: 'slide-background' }
+    | { type: 'element-image'; elementId: string }
+    | null
+  >(null);
   const undoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
   const redoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ['templates'],
@@ -302,20 +309,37 @@ export default function EditorShell() {
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return apiFetchForm<{ path: string; mediaAssetId: string; width: number; height: number }>(
-        '/api/upload',
-        {
-          method: 'POST',
-          body: formData
-        }
-      );
-    },
-    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
-  });
+  const calculateMediaPlacement = (asset: MediaAssetDto) => {
+    if (!selectedScreen) {
+      return { x: 120, y: 120, width: 480, height: 270 };
+    }
+
+    const padding = 80;
+    const maxWidth = Math.max(120, selectedScreen.width - padding * 2);
+    const maxHeight = Math.max(120, selectedScreen.height - padding * 2);
+
+    let width = asset.width ?? Math.round(selectedScreen.width * 0.5);
+    let height = asset.height ?? Math.round(selectedScreen.height * 0.5);
+
+    if (asset.width == null || asset.height == null) {
+      const fallbackAspect = asset.kind === 'video' ? 16 / 9 : 4 / 3;
+      width = Math.min(width, maxWidth);
+      height = Math.round(width / fallbackAspect);
+    }
+
+    if (width > maxWidth || height > maxHeight) {
+      const scale = Math.min(maxWidth / width, maxHeight / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    return {
+      width,
+      height,
+      x: Math.round((selectedScreen.width - width) / 2),
+      y: Math.round((selectedScreen.height - height) / 2)
+    };
+  };
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -477,31 +501,72 @@ export default function EditorShell() {
     });
   };
 
-  const handleAddImage = () => {
-    fileInputRef.current?.click();
+  const handleAddMedia = () => {
+    setMediaIntent({ type: 'add-element' });
+    setShowMediaLibrary(true);
   };
 
-  const handleImageSelected = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !selectedSlideId) return;
-    const upload = await uploadMutation.mutateAsync(file);
+  const handleMediaSelected = (asset: MediaAssetDto) => {
+    if (!mediaIntent) return false;
+    if (mediaIntent.type === 'slide-background') {
+      if (asset.kind !== 'image') {
+        notifications.show({ color: 'red', message: 'Please select an image asset.' });
+        return false;
+      }
+      handleSlideChange({ backgroundImagePath: resolveMediaPath(asset.path) || null });
+      return true;
+    }
+
+    if (mediaIntent.type === 'element-image') {
+      if (asset.kind !== 'image') {
+        notifications.show({ color: 'red', message: 'Please select an image asset.' });
+        return false;
+      }
+      const targetElement = selectedSlide?.elements?.find((item) => item.id === mediaIntent.elementId) ?? null;
+      if (!targetElement) return false;
+      const data = (targetElement.dataJson as Record<string, unknown>) ?? {};
+      handleElementChange({
+        dataJson: {
+          ...data,
+          path: resolveMediaPath(asset.path),
+          mediaAssetId: asset.id,
+          originalName: asset.originalName
+        }
+      });
+      return true;
+    }
+
+    if (!selectedSlideId) return false;
     const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
+    const placement = calculateMediaPlacement(asset);
+    const isVideo = asset.kind === 'video';
+    const resolvedPath = resolveMediaPath(asset.path);
     createElementMutation.mutate({
-      type: 'image',
-      x: 120,
-      y: 120,
-      width: upload.width || 480,
-      height: upload.height || 270,
+      type: isVideo ? 'video' : 'image',
+      x: placement.x,
+      y: placement.y,
+      width: placement.width,
+      height: placement.height,
       rotation: 0,
       opacity: 1,
       zIndex: nextZ,
       animation: 'none',
-      dataJson: {
-        path: upload.path,
-        mediaAssetId: upload.mediaAssetId
-      }
+      dataJson: isVideo
+        ? {
+            path: resolvedPath,
+            mediaAssetId: asset.id,
+            autoplay: false,
+            loop: true,
+            muted: true,
+            controls: false
+          }
+        : {
+            path: resolvedPath,
+            mediaAssetId: asset.id,
+            originalName: asset.originalName
+          }
     });
-    event.target.value = '';
+    return true;
   };
 
   const handleBringForward = () => {
@@ -523,7 +588,6 @@ export default function EditorShell() {
 
   return (
     <AppShell padding={0} className="editor-shell">
-      <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={handleImageSelected} />
       <AppShell.Main>
         <Drawer
           opened={showSlideshows}
@@ -618,8 +682,8 @@ export default function EditorShell() {
                 <Button size="xs" onClick={handleAddLabel} disabled={!selectedSlideId}>
                   Add Label
                 </Button>
-                <Button size="xs" variant="light" onClick={handleAddImage} disabled={!selectedSlideId}>
-                  Add Image
+                <Button size="xs" variant="light" onClick={handleAddMedia} disabled={!selectedSlideId}>
+                  Add Media
                 </Button>
                 <Button size="xs" variant="subtle" onClick={handleBringForward} disabled={!selectedElement}>
                   Bring Forward
@@ -665,8 +729,30 @@ export default function EditorShell() {
                     screenKeys={screens.map((screen) => screen.key)}
                     onChange={handleSlideshowChange}
                   />
-                  <SlidePropsPanel slide={selectedSlide} onChange={handleSlideChange} />
-                  <ElementPropsPanel element={selectedElement} onChange={handleElementChange} />
+                  <SlidePropsPanel
+                    slide={selectedSlide}
+                    onChange={handleSlideChange}
+                    onChooseBackgroundImage={
+                      selectedSlideId
+                        ? () => {
+                            setMediaIntent({ type: 'slide-background' });
+                            setShowMediaLibrary(true);
+                          }
+                        : undefined
+                    }
+                  />
+                  <ElementPropsPanel
+                    element={selectedElement}
+                    onChange={handleElementChange}
+                    onChooseImage={
+                      selectedElement && selectedElement.type === 'image'
+                        ? () => {
+                            setMediaIntent({ type: 'element-image', elementId: selectedElement.id });
+                            setShowMediaLibrary(true);
+                          }
+                        : undefined
+                    }
+                  />
                 </Stack>
               </ScrollArea>
             </Box>
@@ -678,6 +764,24 @@ export default function EditorShell() {
           <Loader />
         </Box>
       )}
+      <MediaLibraryModal
+        opened={showMediaLibrary}
+        onClose={() => {
+          setShowMediaLibrary(false);
+          setMediaIntent(null);
+        }}
+        onSelect={(asset) => {
+          const shouldClose = handleMediaSelected(asset);
+          if (shouldClose) {
+            setShowMediaLibrary(false);
+            setMediaIntent(null);
+          }
+        }}
+        initialFilter={
+          mediaIntent?.type === 'slide-background' || mediaIntent?.type === 'element-image' ? 'image' : 'all'
+        }
+        lockFilter={mediaIntent?.type === 'slide-background' || mediaIntent?.type === 'element-image'}
+      />
     </AppShell>
   );
 }
