@@ -1,10 +1,11 @@
 - Google font selector
-- Text styling options (bold, italic, underline, font size, color)
 - Caching mechanism
-- Test videos
-- Set videos to autoplay and loop by default
 - Fix background preview in editor
-- Fix SSE reload trigger on background change
 - Add option to choose between cover, contain, center for background image size
-- Make layers more controllable (move up/down)
+- Make layers more controllable (move up/down), mostly easier UI
 - Clean up UI
+- Replace active slide logic with endpoint system
+- Fix element animations
+- Add authentication system
+- Upgrade outdated dependencies
+- Add more element types (shapes, material icons, etc.)
