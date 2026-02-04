@@ -90,6 +90,67 @@ export class SlideService {
     return result.deleted;
   }
 
+  async duplicateSlide(id: string) {
+    const result = await prisma.$transaction(async (tx) => {
+      const original = await tx.slide.findUnique({
+        where: { id },
+        include: { elements: true }
+      });
+      if (!original) {
+        throw new Error('Slide not found');
+      }
+
+      await tx.slide.updateMany({
+        where: {
+          screenId: original.screenId,
+          orderIndex: { gt: original.orderIndex }
+        },
+        data: { orderIndex: { increment: 1 } }
+      });
+
+      const created = await tx.slide.create({
+        data: {
+          screen: { connect: { id: original.screenId } },
+          orderIndex: original.orderIndex + 1,
+          title: original.title ? `${original.title} (Copy)` : null,
+          autoSlideMsOverride: original.autoSlideMsOverride,
+          backgroundColor: original.backgroundColor,
+          backgroundImagePath: original.backgroundImagePath,
+          transitionOverride: original.transitionOverride,
+          elements: {
+            createMany: {
+              data: original.elements.map((element) => ({
+                type: element.type,
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height,
+                rotation: element.rotation,
+                opacity: element.opacity,
+                zIndex: element.zIndex,
+                animation: element.animation,
+                dataJson: element.dataJson
+              }))
+            }
+          }
+        }
+      });
+
+      const revisionInfo = await bumpScreenRevision(original.screenId, tx);
+      return { created, revisionInfo };
+    });
+
+    eventHub.publish({
+      type: 'screenChanged',
+      slideshowId: result.revisionInfo.slideshowId,
+      screenKey: result.revisionInfo.screenKey,
+      revision: result.revisionInfo.revision,
+      at: new Date().toISOString()
+    });
+
+    return result.created;
+  }
+
   async reorderSlides(screenId: string, orderedIds: string[]) {
     const result = await prisma.$transaction(async (tx) => {
       const updates = await Promise.all(

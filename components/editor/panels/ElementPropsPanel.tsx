@@ -27,11 +27,13 @@ export default function ElementPropsPanel({
   element,
   onChange,
   onChooseImage,
+  onChooseVideo,
   showTitle = true
 }: {
   element: SlideElementDto | null;
   onChange: (attrs: Partial<SlideElementDto>) => void;
   onChooseImage?: () => void;
+  onChooseVideo?: () => void;
   showTitle?: boolean;
 }) {
   const data = (element?.dataJson ?? {}) as Record<string, unknown>;
@@ -249,7 +251,49 @@ export default function ElementPropsPanel({
         </>
       ) : element.type === 'video' ? (
         <>
-          <TextInput label="Video path" value={(data.path as string) ?? ''} onChange={(event) => updateData({ path: event.currentTarget.value })} />
+          <Stack gap={6}>
+            <Text size="sm" fw={500}>
+              Video
+            </Text>
+            {(data.path as string) ? (
+              <Box
+                style={{
+                  width: '100%',
+                  aspectRatio: '16 / 9',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: '#0b0f18',
+                  border: '1px solid #232a3b'
+                }}
+              >
+                <video
+                  src={resolveMediaPath(data.path as string)}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </Box>
+            ) : null}
+            <Text size="xs" c="dimmed" lineClamp={1}>
+              {(data.path as string) ?? 'No video selected'}
+            </Text>
+            <Group justify="space-between" align="center">
+              <Button size="xs" variant="light" onClick={onChooseVideo} disabled={!onChooseVideo}>
+                Choose video
+              </Button>
+              {(data.path as string) ? (
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="red"
+                  onClick={() => updateData({ path: '', mediaAssetId: undefined })}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </Group>
+          </Stack>
           <Switch
             label="Autoplay"
             checked={(data.autoplay as boolean | undefined) ?? false}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Group, Rect, Text, Image as KonvaImage, Shape } from 'react-konva';
 import useImage from 'use-image';
 import type Konva from 'konva';
@@ -20,9 +20,59 @@ export default function ElementRenderer({
   onSelect: () => void;
   onCommit: (attrs: Partial<SlideElementDto>) => void;
 }) {
+  const localRef = useRef<Konva.Node | null>(null);
   const rawPath = element.type === 'image' ? ((element.dataJson as Record<string, unknown>).path as string) : '';
   const imagePath = resolveMediaPath(rawPath);
   const [image] = useImage(imagePath);
+  const [videoThumbnail, setVideoThumbnail] = useState<HTMLVideoElement | null>(null);
+
+  const videoPath = useMemo(() => {
+    if (element.type !== 'video') return '';
+    const data = element.dataJson as Record<string, unknown>;
+    return resolveMediaPath((data.path as string) ?? '');
+  }, [element]);
+
+  useEffect(() => {
+    if (element.type !== 'video' || !videoPath) {
+      setVideoThumbnail(null);
+      return;
+    }
+
+    const video = document.createElement('video');
+    video.src = videoPath;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+
+    const handleError = () => {
+      setVideoThumbnail(null);
+    };
+
+    const handleSeeked = () => {
+      setVideoThumbnail(video);
+    };
+
+    const handleLoaded = async () => {
+      try {
+        video.currentTime = 0.01;
+        await video.play();
+        video.pause();
+      } catch {
+        // Ignore autoplay restrictions; seeked handler may still fire.
+      }
+    };
+
+    video.addEventListener('loadeddata', handleLoaded);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('error', handleError);
+
+    return () => {
+      video.removeEventListener('loadeddata', handleLoaded);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('error', handleError);
+      video.src = '';
+    };
+  }, [element.type, videoPath]);
 
   const commonProps = {
     x: element.x,
@@ -65,10 +115,19 @@ export default function ElementRenderer({
 
   const refCallback = useCallback(
     (node: Konva.Node | null) => {
+      localRef.current = node;
       registerRef(node);
     },
     [registerRef]
   );
+
+  useEffect(() => {
+    if (element.type !== 'video') return;
+    if (!localRef.current) return;
+    const layer = localRef.current.getLayer();
+    if (!layer) return;
+    requestAnimationFrame(() => layer.batchDraw());
+  }, [element.type, videoThumbnail]);
 
   if (element.type === 'label') {
     const data = element.dataJson as Record<string, unknown>;
@@ -101,13 +160,25 @@ export default function ElementRenderer({
   if (element.type === 'video') {
     return (
       <Group ref={refCallback} {...commonProps}>
-        <Rect
-          width={element.width}
-          height={element.height}
-          fill="#101726"
-          stroke={isSelected ? '#54b3ff' : '#2b3447'}
-          strokeWidth={isSelected ? 1 : 1}
-        />
+        {videoThumbnail ? (
+          <KonvaImage image={videoThumbnail} width={element.width} height={element.height} />
+        ) : (
+          <Rect
+            width={element.width}
+            height={element.height}
+            fill="#101726"
+            stroke={isSelected ? '#54b3ff' : '#2b3447'}
+            strokeWidth={isSelected ? 1 : 1}
+          />
+        )}
+        {isSelected ? (
+          <Rect
+            width={element.width}
+            height={element.height}
+            stroke="#54b3ff"
+            strokeWidth={1}
+          />
+        ) : null}
         <Text
           text=">"
           width={element.width}

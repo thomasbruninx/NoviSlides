@@ -10,6 +10,7 @@ export default function SlidesSidebar({
   onSelect,
   onAdd,
   onDelete,
+  onDuplicate,
   onReorder
 }: {
   slides: SlideDto[];
@@ -17,6 +18,7 @@ export default function SlidesSidebar({
   onSelect: (id: string) => void;
   onAdd: () => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
 }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function SlidesSidebar({
           Add
         </Button>
       </Group>
-      <ScrollArea h={280}>
+      <ScrollArea h="100%">
         <Stack gap="xs">
           {slides.map((slide, index) => (
             <Paper
@@ -64,21 +66,30 @@ export default function SlidesSidebar({
                   <Text size="sm" fw={600}>
                     {slide.title || `Slide ${index + 1}`}
                   </Text>
-                  <Text size="xs" c="dimmed">
-                    #{slide.orderIndex}
-                  </Text>
                 </Stack>
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  color="red"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onDelete(slide.id);
-                  }}
-                >
-                  Delete
-                </Button>
+                <Group gap="xs">
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDuplicate(slide.id);
+                    }}
+                  >
+                    Duplicate
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="red"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDelete(slide.id);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </Group>
               </Group>
             </Paper>
           ))}

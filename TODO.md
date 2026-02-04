@@ -4,9 +4,7 @@
 - Make layers more controllable (move up/down), mostly easier UI
 - Clean up UI
 - Replace active slide logic with endpoint system
-- Make possible to duplicate slides
 - Add authentication system
 - Upgrade outdated dependencies
 - Add more element types (material icons, etc.)
-- Add video thumbnail (+generator) for editor
 - Add guidelines to center or outline elements (maybe also a toggle to make them magnetic)

@@ -65,6 +65,7 @@ export default function EditorShell() {
     | { type: 'add-element' }
     | { type: 'slide-background' }
     | { type: 'element-image'; elementId: string }
+    | { type: 'element-video'; elementId: string }
     | null
   >(null);
   const undoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
@@ -230,6 +231,15 @@ export default function EditorShell() {
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
+  const duplicateSlideMutation = useMutation({
+    mutationFn: (id: string) => apiFetch<SlideDto>(`/api/slides/${id}/duplicate`, { method: 'POST' }),
+    onSuccess: (slide) => {
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      setSelectedSlideId(slide.id);
+      notifications.show({ color: 'green', message: 'Slide duplicated' });
+    },
+    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
+  });
   const reorderSlidesMutation = useMutation({
     mutationFn: (orderedIds: string[]) =>
       apiFetch<SlideDto[]>(`/api/screens/${selectedScreenId}/slides/reorder`, {
@@ -780,6 +790,24 @@ export default function EditorShell() {
       return true;
     }
 
+    if (mediaIntent.type === 'element-video') {
+      if (asset.kind !== 'video') {
+        notifications.show({ color: 'red', message: 'Please select a video asset.' });
+        return false;
+      }
+      const targetElement = selectedSlide?.elements?.find((item) => item.id === mediaIntent.elementId) ?? null;
+      if (!targetElement) return false;
+      const data = (targetElement.dataJson as Record<string, unknown>) ?? {};
+      handleElementChange({
+        dataJson: {
+          ...data,
+          path: resolveMediaPath(asset.path),
+          mediaAssetId: asset.id
+        }
+      });
+      return true;
+    }
+
     if (!selectedSlideId) return false;
     const saved = await flushPendingSavesRef.current();
     if (!saved) {
@@ -916,6 +944,7 @@ export default function EditorShell() {
               setShowSlides(false);
             }}
             onAdd={() => createSlideMutation.mutate()}
+            onDuplicate={(id) => duplicateSlideMutation.mutate(id)}
             onDelete={(id) => deleteSlideMutation.mutate(id)}
             onReorder={handleReorderSlides}
           />
@@ -1066,6 +1095,14 @@ export default function EditorShell() {
                               }
                             : undefined
                         }
+                        onChooseVideo={
+                          selectedElement && selectedElement.type === 'video'
+                            ? () => {
+                                setMediaIntent({ type: 'element-video', elementId: selectedElement.id });
+                                setShowMediaLibrary(true);
+                              }
+                            : undefined
+                        }
                         showTitle={false}
                       />
                     </Accordion.Panel>
@@ -1095,9 +1132,17 @@ export default function EditorShell() {
           }
         }}
         initialFilter={
-          mediaIntent?.type === 'slide-background' || mediaIntent?.type === 'element-image' ? 'image' : 'all'
+          mediaIntent?.type === 'slide-background' || mediaIntent?.type === 'element-image'
+            ? 'image'
+            : mediaIntent?.type === 'element-video'
+            ? 'video'
+            : 'all'
         }
-        lockFilter={mediaIntent?.type === 'slide-background' || mediaIntent?.type === 'element-image'}
+        lockFilter={
+          mediaIntent?.type === 'slide-background' ||
+          mediaIntent?.type === 'element-image' ||
+          mediaIntent?.type === 'element-video'
+        }
       />
     </AppShell>
   );
