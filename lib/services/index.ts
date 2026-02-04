@@ -5,3 +5,4 @@ export * from './TemplateService';
 export * from './MediaService';
 export * from './ViewerService';
 export * from './ScreenRefreshService';
+export * from './FontService';

@@ -6,6 +6,7 @@ import { useElementSize } from '@mantine/hooks';
 import useImage from 'use-image';
 import type Konva from 'konva';
 import type { ScreenDto, SlideDto, SlideElementDto } from '@/lib/types';
+import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
 import ElementRenderer from './ElementRenderer';
 import Transformers from './Transformers';
 
@@ -53,6 +54,17 @@ export default function KonvaStage({
 
   const stageWidth = screen.width * scale;
   const stageHeight = screen.height * scale;
+
+  const labelFonts = useMemo(
+    () =>
+      (slide?.elements ?? [])
+        .filter((element) => element.type === 'label')
+        .map((element) => (element.dataJson as Record<string, unknown>).fontFamily as string)
+        .filter((font): font is string => Boolean(font)),
+    [slide]
+  );
+
+  useGoogleFonts(labelFonts);
 
   return (
     <div

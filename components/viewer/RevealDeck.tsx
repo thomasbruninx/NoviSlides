@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Reveal from 'reveal.js';
 import type { SlideDto, ScreenDto, SlideshowDto } from '@/lib/types';
+import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
 import SlideSection from './SlideSection';
 
 export default function RevealDeck({
@@ -17,6 +18,18 @@ export default function RevealDeck({
   const deckRef = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<InstanceType<typeof Reveal> | null>(null);
   const isReadyRef = useRef(false);
+
+  const labelFonts = useMemo(
+    () =>
+      slides
+        .flatMap((slide) => slide.elements ?? [])
+        .filter((element) => element.type === 'label')
+        .map((element) => (element.dataJson as Record<string, unknown>).fontFamily as string)
+        .filter((font): font is string => Boolean(font)),
+    [slides]
+  );
+
+  useGoogleFonts(labelFonts);
   const latestConfigRef = useRef({
     width: screen.width,
     height: screen.height,

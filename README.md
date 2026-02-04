@@ -25,6 +25,11 @@ create a `.env` file in the root with the following content:
 DATABASE_URL="file:./prisma/dev.db"
 ```
 
+Optional (for Google Fonts dropdown in the editor):
+```
+GOOGLE_FONTS_API_KEY="your-google-fonts-api-key"
+```
+
 3. Run Prisma migrations
 
 ```bash

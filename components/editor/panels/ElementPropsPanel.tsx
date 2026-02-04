@@ -1,9 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { Stack, Text, NumberInput, Select, TextInput, ColorInput, SegmentedControl, Switch, Group, Button, Box } from '@mantine/core';
+import { useEffect, useMemo, useState } from 'react';
+import { Stack, Text, NumberInput, Select, TextInput, ColorInput, SegmentedControl, Switch, Group, Button, Box, Loader } from '@mantine/core';
 import type { SlideElementAnimation, SlideElementDto, SlideElementDataShape } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
+import { apiFetch } from '@/lib/utils/api';
+import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
+import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
 
 const animationOptions: Array<{ value: SlideElementAnimation; label: string }> = [
   { value: 'none', label: 'None' },
@@ -11,6 +15,13 @@ const animationOptions: Array<{ value: SlideElementAnimation; label: string }> =
   { value: 'zoom', label: 'Zoom' },
   { value: 'appear', label: 'Appear' }
 ];
+
+type FontOption = {
+  value: string;
+  label: string;
+  fontFamily: string;
+  kind: 'system' | 'google' | 'custom';
+};
 
 export default function ElementPropsPanel({
   element,
@@ -23,6 +34,112 @@ export default function ElementPropsPanel({
   onChooseImage?: () => void;
   showTitle?: boolean;
 }) {
+  const data = (element?.dataJson ?? {}) as Record<string, unknown>;
+
+  const toNumber = (value: string | number | null) =>
+    typeof value === 'number' && !Number.isNaN(value) ? value : 0;
+
+  const updateData = (patch: Record<string, unknown>) => {
+    onChange({ dataJson: { ...data, ...patch } });
+  };
+
+  const [fontSearch, setFontSearch] = useState('');
+  const [fontQuery, setFontQuery] = useState('');
+  const [googleFonts, setGoogleFonts] = useState<string[]>([]);
+  const [googleFontsAvailable, setGoogleFontsAvailable] = useState(true);
+  const [fontsLoading, setFontsLoading] = useState(false);
+
+  useEffect(() => {
+    setFontSearch('');
+    setFontQuery('');
+  }, [element?.id]);
+
+  const debouncedQuery = useDebouncedCallback((value: string) => {
+    setFontQuery(value);
+  }, 300);
+
+  useEffect(() => {
+    if (!element || element.type !== 'label') {
+      setGoogleFonts([]);
+      setFontsLoading(false);
+      return;
+    }
+    let isActive = true;
+
+    const loadFonts = async () => {
+      setFontsLoading(true);
+      try {
+        const result = await apiFetch<{ items: string[]; hasGoogleFonts: boolean }>(
+          `/api/fonts?query=${encodeURIComponent(fontQuery)}&limit=40`
+        );
+        if (!isActive) return;
+        setGoogleFonts(result.items);
+        setGoogleFontsAvailable(result.hasGoogleFonts);
+      } catch {
+        if (!isActive) return;
+        setGoogleFonts([]);
+        setGoogleFontsAvailable(false);
+      } finally {
+        if (isActive) {
+          setFontsLoading(false);
+        }
+      }
+    };
+
+    loadFonts();
+    return () => {
+      isActive = false;
+    };
+  }, [element, fontQuery]);
+
+  const systemFonts = useMemo<FontOption[]>(
+    () => [
+      { value: 'sans-serif', label: 'Sans-serif', fontFamily: 'sans-serif', kind: 'system' as const },
+      { value: 'serif', label: 'Serif', fontFamily: 'serif', kind: 'system' as const },
+      { value: 'monospace', label: 'Monospace', fontFamily: 'monospace', kind: 'system' as const }
+    ],
+    []
+  );
+
+  const googleFontOptions = useMemo<FontOption[]>(
+    () =>
+      googleFonts.map((font) => ({
+        value: font,
+        label: font,
+        fontFamily: `'${font}', sans-serif`,
+        kind: 'google' as const
+      })),
+    [googleFonts]
+  );
+
+  const currentFont = (data.fontFamily as string | undefined) ?? 'sans-serif';
+  const hasCurrent =
+    systemFonts.some((option) => option.value === currentFont) ||
+    googleFontOptions.some((option) => option.value === currentFont);
+
+  const customOption: FontOption[] = !hasCurrent
+    ? [
+        {
+          value: currentFont,
+          label: currentFont,
+          fontFamily: currentFont,
+          kind: 'custom' as const
+        }
+      ]
+    : [];
+
+  const fontOptions = [
+    ...(customOption.length ? [{ group: 'Custom', items: customOption }] : []),
+    { group: 'System', items: systemFonts },
+    ...(googleFontOptions.length ? [{ group: 'Google Fonts', items: googleFontOptions }] : [])
+  ];
+  const googleFontFamilies = useMemo(() => googleFontOptions.map((option) => option.value), [googleFontOptions]);
+  const fontsToLoad = useMemo(() => {
+    const set = new Set<string>([...googleFontFamilies, currentFont]);
+    return Array.from(set);
+  }, [googleFontFamilies, currentFont]);
+  useGoogleFonts(fontsToLoad);
+
   if (!element) {
     return (
       <Stack gap="xs">
@@ -33,15 +150,6 @@ export default function ElementPropsPanel({
       </Stack>
     );
   }
-
-  const data = element.dataJson as Record<string, unknown>;
-
-  const toNumber = (value: string | number | null) =>
-    typeof value === 'number' && !Number.isNaN(value) ? value : 0;
-
-  const updateData = (patch: Record<string, unknown>) => {
-    onChange({ dataJson: { ...data, ...patch } });
-  };
 
   return (
     <Stack gap="sm">
@@ -71,7 +179,37 @@ export default function ElementPropsPanel({
         <>
           <TextInput label="Text" value={(data.text as string) ?? ''} onChange={(event) => updateData({ text: event.currentTarget.value })} />
           <NumberInput label="Font size" value={(data.fontSize as number) ?? 32} onChange={(val) => updateData({ fontSize: toNumber(val) })} />
-          <TextInput label="Font family" value={(data.fontFamily as string) ?? ''} onChange={(event) => updateData({ fontFamily: event.currentTarget.value })} />
+          <Select
+            label="Font"
+            searchable
+            data={fontOptions}
+            value={currentFont}
+            onChange={(value) => updateData({ fontFamily: value ?? 'sans-serif' })}
+            searchValue={fontSearch}
+            onSearchChange={(value) => {
+              setFontSearch(value);
+              debouncedQuery(value);
+            }}
+            nothingFoundMessage={fontsLoading ? 'Loading fonts...' : 'No fonts found'}
+            rightSection={fontsLoading ? <Loader size="xs" /> : undefined}
+            styles={{ input: { fontFamily: currentFont } }}
+            renderOption={({ option }) => {
+              const typed = option as FontOption;
+              return (
+                <Group justify="space-between" align="center" wrap="nowrap">
+                  <Text style={{ fontFamily: typed.fontFamily }}>{typed.label}</Text>
+                  <Text size="xs" c="dimmed">
+                    {typed.kind === 'google' ? 'Google' : typed.kind === 'custom' ? 'Custom' : 'System'}
+                  </Text>
+                </Group>
+              );
+            }}
+          />
+          {!googleFontsAvailable ? (
+            <Text size="xs" c="dimmed">
+              Google Fonts unavailable. Set `GOOGLE_FONTS_API_KEY` on the server to enable full list.
+            </Text>
+          ) : null}
           <ColorInput label="Color" value={(data.color as string) ?? '#ffffff'} onChange={(val) => updateData({ color: val })} />
           <Group gap="xs">
             <Switch
