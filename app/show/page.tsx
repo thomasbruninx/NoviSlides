@@ -43,6 +43,7 @@ export default async function ShowPage() {
     <LiveRevealDeck
       slideshowId={slideshow.id}
       screenKey={screen.key}
+      watchActiveSlideshow
       initialDeck={{
         slideshow: toSlideshowDto(slideshow),
         screen: toScreenDto(screen),

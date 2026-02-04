@@ -29,8 +29,12 @@ export class InMemoryEventHub implements IEventHub {
   }
 
   private matches(filter: EventFilter, event: EventHubEvent) {
-    if (filter.slideshowId !== event.slideshowId) return false;
-    if (filter.screenKey && filter.screenKey !== event.screenKey) return false;
+    if (filter.eventType && filter.eventType !== event.type) return false;
+    if (filter.slideshowId && filter.slideshowId !== event.slideshowId) return false;
+    if (filter.screenKey) {
+      if (!('screenKey' in event)) return false;
+      if (filter.screenKey !== event.screenKey) return false;
+    }
     return true;
   }
 }

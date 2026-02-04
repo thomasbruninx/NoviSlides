@@ -2,23 +2,20 @@ import { z } from 'zod';
 import { eventHub } from '@/lib/services/events';
 import { fail } from '@/lib/utils/respond';
 
-const querySchema = z.object({
+const screenQuerySchema = z.object({
   slideshowId: z.string().min(1),
   screenKey: z.string().min(1)
+});
+
+const activeQuerySchema = z.object({
+  scope: z.literal('active')
 });
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const parsed = querySchema.safeParse({
-    slideshowId: url.searchParams.get('slideshowId'),
-    screenKey: url.searchParams.get('screenKey')
-  });
-
-  if (!parsed.success) {
-    return fail('validation_error', 'Invalid event stream params', 400, parsed.error.flatten());
-  }
+  const scope = url.searchParams.get('scope');
 
   const encoder = new TextEncoder();
   const stream = new TransformStream();
@@ -31,14 +28,37 @@ export async function GET(request: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
   };
 
-  const unsubscribe = eventHub.subscribe(
-    { slideshowId: parsed.data.slideshowId, screenKey: parsed.data.screenKey },
-    (event) => {
-      if (event.type === 'screenChanged') {
-        void sendEvent('screenChanged', event);
-      }
+  let filter: { eventType: 'activeSlideshowChanged' } | { eventType: 'screenChanged'; slideshowId: string; screenKey: string };
+
+  if (scope === 'active') {
+    const parsedActive = activeQuerySchema.safeParse({ scope });
+    if (!parsedActive.success) {
+      return fail('validation_error', 'Invalid event stream params', 400, parsedActive.error.flatten());
     }
-  );
+    filter = { eventType: 'activeSlideshowChanged' };
+  } else {
+    const parsedScreen = screenQuerySchema.safeParse({
+      slideshowId: url.searchParams.get('slideshowId'),
+      screenKey: url.searchParams.get('screenKey')
+    });
+    if (!parsedScreen.success) {
+      return fail('validation_error', 'Invalid event stream params', 400, parsedScreen.error.flatten());
+    }
+    filter = {
+      eventType: 'screenChanged',
+      slideshowId: parsedScreen.data.slideshowId,
+      screenKey: parsedScreen.data.screenKey
+    };
+  }
+
+  const unsubscribe = eventHub.subscribe(filter, (event) => {
+    if (event.type === 'screenChanged') {
+      void sendEvent('screenChanged', event);
+    }
+    if (event.type === 'activeSlideshowChanged') {
+      void sendEvent('activeSlideshowChanged', event);
+    }
+  });
 
   const heartbeat = setInterval(() => {
     void sendEvent('ping', { at: new Date().toISOString() });

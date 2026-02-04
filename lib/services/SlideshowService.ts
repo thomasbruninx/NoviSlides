@@ -121,7 +121,14 @@ export class SlideshowService {
   }
 
   async activateSlideshow(id: string) {
-    return this.slideshowRepo.activate(id);
+    const slideshow = await this.slideshowRepo.activate(id);
+    eventHub.publish({
+      type: 'activeSlideshowChanged',
+      slideshowId: slideshow.id,
+      defaultScreenKey: slideshow.defaultScreenKey,
+      at: new Date().toISOString()
+    });
+    return slideshow;
   }
 
   async deactivateSlideshow(id: string) {

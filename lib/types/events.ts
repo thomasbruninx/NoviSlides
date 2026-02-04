@@ -6,9 +6,17 @@ export type ScreenChangedEvent = {
   at: string;
 };
 
-export type EventHubEvent = ScreenChangedEvent;
+export type ActiveSlideshowChangedEvent = {
+  type: 'activeSlideshowChanged';
+  slideshowId: string;
+  defaultScreenKey: string;
+  at: string;
+};
+
+export type EventHubEvent = ScreenChangedEvent | ActiveSlideshowChangedEvent;
 
 export type EventFilter = {
-  slideshowId: string;
+  eventType?: EventHubEvent['type'];
+  slideshowId?: string;
   screenKey?: string;
 };

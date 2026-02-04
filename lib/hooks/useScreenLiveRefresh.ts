@@ -9,6 +9,7 @@ type UseScreenLiveRefreshArgs = {
   onDeckUpdate: (deck: ScreenDeckDto) => void;
   pollIntervalMs?: number;
   sseErrorThreshold?: number;
+  reconnectIntervalMs?: number;
 };
 
 export function useScreenLiveRefresh({
@@ -18,11 +19,13 @@ export function useScreenLiveRefresh({
   fetchLatestDeck,
   onDeckUpdate,
   pollIntervalMs = 15000,
-  sseErrorThreshold = 3
+  sseErrorThreshold = 3,
+  reconnectIntervalMs = 30000
 }: UseScreenLiveRefreshArgs) {
   const revisionRef = useRef(currentRevision);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const errorCountRef = useRef(0);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     revisionRef.current = currentRevision;
@@ -66,8 +69,34 @@ export function useScreenLiveRefresh({
     )}&screenKey=${encodeURIComponent(screenKey)}`;
     let eventSource: EventSource | null = null;
 
+    const clearReconnect = () => {
+      if (!reconnectTimerRef.current) return;
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    };
+
+    const scheduleReconnect = () => {
+      if (reconnectTimerRef.current) return;
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        connect();
+      }, reconnectIntervalMs);
+    };
+
+    const closeEventSource = () => {
+      eventSource?.close();
+      eventSource = null;
+    };
+
     const connect = () => {
+      closeEventSource();
       eventSource = new EventSource(url);
+
+      eventSource.onopen = () => {
+        errorCountRef.current = 0;
+        stopPolling();
+        clearReconnect();
+      };
 
       eventSource.addEventListener('screenChanged', (raw) => {
         try {
@@ -87,9 +116,9 @@ export function useScreenLiveRefresh({
       eventSource.onerror = () => {
         errorCountRef.current += 1;
         if (errorCountRef.current >= sseErrorThreshold) {
-          eventSource?.close();
-          eventSource = null;
+          closeEventSource();
           startPolling();
+          scheduleReconnect();
         }
       };
     };
@@ -98,8 +127,15 @@ export function useScreenLiveRefresh({
 
     return () => {
       stopPolling();
-      eventSource?.close();
-      eventSource = null;
+      clearReconnect();
+      closeEventSource();
     };
-  }, [applyDeckIfNewer, pollIntervalMs, screenKey, slideshowId, sseErrorThreshold]);
+  }, [
+    applyDeckIfNewer,
+    pollIntervalMs,
+    reconnectIntervalMs,
+    screenKey,
+    slideshowId,
+    sseErrorThreshold
+  ]);
 }
