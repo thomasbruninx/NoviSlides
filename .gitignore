@@ -5,3 +5,4 @@ node_modules
 public/uploads/*
 !public/uploads/.keep
 prisma/prisma/*
+prisma/dev.db
