@@ -1,0 +1,7 @@
+- Google font selector
+- Caching mechanism
+- Test videos
+- Fix background preview in editor
+- Fix SSE reload trigger on background change
+- Add option to choose between cover, contain, center for background image size
+- Clean up UI
