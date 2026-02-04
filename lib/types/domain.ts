@@ -23,6 +23,9 @@ export type SlideElementDataLabel = {
   fontFamily: string;
   color: string;
   align: 'left' | 'center' | 'right';
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
 };
 
 export type SlideElementData = SlideElementDataImage | SlideElementDataVideo | SlideElementDataLabel;

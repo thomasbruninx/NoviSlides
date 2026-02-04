@@ -71,6 +71,23 @@ export default function ElementPropsPanel({
           <NumberInput label="Font size" value={(data.fontSize as number) ?? 32} onChange={(val) => updateData({ fontSize: toNumber(val) })} />
           <TextInput label="Font family" value={(data.fontFamily as string) ?? ''} onChange={(event) => updateData({ fontFamily: event.currentTarget.value })} />
           <ColorInput label="Color" value={(data.color as string) ?? '#ffffff'} onChange={(val) => updateData({ color: val })} />
+          <Group gap="xs">
+            <Switch
+              label="Bold"
+              checked={(data.bold as boolean | undefined) ?? false}
+              onChange={(event) => updateData({ bold: event.currentTarget.checked })}
+            />
+            <Switch
+              label="Italic"
+              checked={(data.italic as boolean | undefined) ?? false}
+              onChange={(event) => updateData({ italic: event.currentTarget.checked })}
+            />
+            <Switch
+              label="Underline"
+              checked={(data.underline as boolean | undefined) ?? false}
+              onChange={(event) => updateData({ underline: event.currentTarget.checked })}
+            />
+          </Group>
           <SegmentedControl
             fullWidth
             data={['left', 'center', 'right'].map((value) => ({ label: value, value }))}

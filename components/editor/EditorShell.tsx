@@ -35,7 +35,10 @@ const defaultLabelData: SlideElementDto['dataJson'] = {
   fontSize: 36,
   fontFamily: 'Plus Jakarta Sans, Segoe UI, Arial',
   color: '#ffffff',
-  align: 'left'
+  align: 'left',
+  bold: false,
+  italic: false,
+  underline: false
 };
 
 const stripUndefined = <T extends Record<string, unknown>>(attrs: T): Partial<T> => {

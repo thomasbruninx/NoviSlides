@@ -50,6 +50,9 @@ export default function SlideSection({
 
           if (isLabel) {
             const data = element.dataJson as Record<string, unknown>;
+            const isBold = (data.bold as boolean | undefined) ?? false;
+            const isItalic = (data.italic as boolean | undefined) ?? false;
+            const isUnderline = (data.underline as boolean | undefined) ?? false;
             return (
               <div
                 key={element.id}
@@ -60,7 +63,10 @@ export default function SlideSection({
                   color: (data.color as string) ?? '#fff',
                   fontSize: (data.fontSize as number) ?? 32,
                   fontFamily: (data.fontFamily as string) ?? 'Segoe UI, Arial',
-                  textAlign: (data.align as 'left' | 'center' | 'right') ?? 'left'
+                  textAlign: (data.align as 'left' | 'center' | 'right') ?? 'left',
+                  fontWeight: isBold ? '700' : '400',
+                  fontStyle: isItalic ? 'italic' : 'normal',
+                  textDecoration: isUnderline ? 'underline' : 'none'
                 }}
               >
                 {data.text as string}

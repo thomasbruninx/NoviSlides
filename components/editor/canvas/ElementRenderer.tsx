@@ -72,6 +72,15 @@ export default function ElementRenderer({
 
   if (element.type === 'label') {
     const data = element.dataJson as Record<string, unknown>;
+    const fontStyleParts: string[] = [];
+    if ((data.bold as boolean | undefined) ?? false) {
+      fontStyleParts.push('bold');
+    }
+    if ((data.italic as boolean | undefined) ?? false) {
+      fontStyleParts.push('italic');
+    }
+    const fontStyle = fontStyleParts.length ? fontStyleParts.join(' ') : 'normal';
+    const textDecoration = ((data.underline as boolean | undefined) ?? false) ? 'underline' : '';
     return (
       <Text
         ref={refCallback}
@@ -79,6 +88,8 @@ export default function ElementRenderer({
         text={(data.text as string) ?? 'Label'}
         fontSize={(data.fontSize as number) ?? 32}
         fontFamily={(data.fontFamily as string) ?? 'Segoe UI, Arial'}
+        fontStyle={fontStyle}
+        textDecoration={textDecoration}
         fill={(data.color as string) ?? '#ffffff'}
         align={(data.align as 'left' | 'center' | 'right') ?? 'left'}
         stroke={isSelected ? '#54b3ff' : undefined}
