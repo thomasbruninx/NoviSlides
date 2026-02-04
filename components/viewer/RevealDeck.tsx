@@ -18,6 +18,7 @@ export default function RevealDeck({
   const deckRef = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<InstanceType<typeof Reveal> | null>(null);
   const isReadyRef = useRef(false);
+  const loopResetSlideRef = useRef<HTMLElement | null>(null);
 
   const labelFonts = useMemo(
     () =>
@@ -168,10 +169,111 @@ export default function RevealDeck({
       });
     };
 
-    const handleSlideChange = (event: { currentSlide?: HTMLElement | null }) => {
-      const currentSlide = event.currentSlide ?? deck.getCurrentSlide();
+    const getSlideSections = () => {
+      const root = deckRef.current?.querySelector('.slides');
+      if (!root) return [];
+      return Array.from(root.children).filter(
+        (node): node is HTMLElement =>
+          node instanceof HTMLElement && node.tagName.toLowerCase() === 'section'
+      );
+    };
+
+    const getSlideIndex = (slide: HTMLElement | null) => {
+      if (!slide) return null;
+      const sections = getSlideSections();
+      const direct = sections.indexOf(slide);
+      if (direct !== -1) {
+        return { index: direct, total: sections.length };
+      }
+      const parent = slide.closest('.slides > section');
+      if (!parent || !(parent instanceof HTMLElement)) return null;
+      const index = sections.indexOf(parent);
+      if (index === -1) return null;
+      return { index, total: sections.length };
+    };
+
+    const setFragmentResetting = (enabled: boolean) => {
+      const root = deckRef.current;
+      if (!root) return;
+      if (enabled) {
+        root.classList.add('fragment-resetting');
+      } else {
+        root.classList.remove('fragment-resetting');
+      }
+    };
+
+    const resetFragmentsForLoop = (slide: HTMLElement | null) => {
+      if (!slide) return;
+      const fragments = Array.from(
+        slide.querySelectorAll<HTMLElement>('.fragment.visible, .fragment.current-fragment')
+      );
+      if (fragments.length === 0) return;
+      fragments.forEach((fragment) => {
+        fragment.classList.add('fragment-no-transition');
+        fragment.classList.remove('visible', 'current-fragment');
+      });
+    };
+
+    const handleBeforeSlideChange = (event: { data?: { indexh?: number } } & { indexh?: number }) => {
+      if (!slideshow.loop) return;
+      const currentInfo = getSlideIndex(deck.getCurrentSlide());
+      const nextIndex =
+        typeof event.data?.indexh === 'number'
+          ? event.data.indexh
+          : typeof event.indexh === 'number'
+            ? event.indexh
+            : null;
+      if (!currentInfo || nextIndex === null) return;
+      if (currentInfo.index === currentInfo.total - 1 && nextIndex === 0) {
+        const nextSlide = getSlideSections()[0] ?? null;
+        if (nextSlide) {
+          setFragmentResetting(true);
+          resetFragmentsForLoop(nextSlide);
+          loopResetSlideRef.current = nextSlide;
+        }
+      }
+    };
+
+    const handleSlideChange = (event: {
+      currentSlide?: HTMLElement | null;
+      previousSlide?: HTMLElement | null;
+      data?: {
+        currentSlide?: HTMLElement | null;
+        previousSlide?: HTMLElement | null;
+      };
+    }) => {
+      const currentSlide = event.data?.currentSlide ?? event.currentSlide ?? deck.getCurrentSlide();
       resetVideosOutsideSlide(currentSlide ?? null);
       restartVideosInSlide(currentSlide ?? null);
+
+      if (slideshow.loop) {
+        const currentInfo = getSlideIndex(currentSlide ?? null);
+        const prevSlide = event.data?.previousSlide ?? event.previousSlide ?? null;
+        const prevInfo = getSlideIndex(prevSlide);
+        if (
+          currentInfo &&
+          prevInfo &&
+          currentInfo.index === 0 &&
+          prevInfo.index === prevInfo.total - 1
+        ) {
+          if (!loopResetSlideRef.current) {
+            if (currentSlide) {
+              setFragmentResetting(true);
+              resetFragmentsForLoop(currentSlide);
+              loopResetSlideRef.current = currentSlide;
+            }
+          }
+        }
+      }
+
+      if (loopResetSlideRef.current) {
+        loopResetSlideRef.current = null;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setFragmentResetting(false);
+          });
+        });
+      }
     };
 
     const handleReady = (event: { currentSlide?: HTMLElement | null }) => {
@@ -179,6 +281,7 @@ export default function RevealDeck({
       restartVideosInSlide(currentSlide ?? null);
     };
 
+    deck.on('beforeslidechange', handleBeforeSlideChange);
     deck.on('slidechanged', handleSlideChange);
     deck.on('ready', handleReady);
 
@@ -186,10 +289,11 @@ export default function RevealDeck({
     restartVideosInSlide(initialSlide ?? null);
 
     return () => {
+      deck.off('beforeslidechange', handleBeforeSlideChange);
       deck.off('slidechanged', handleSlideChange);
       deck.off('ready', handleReady);
     };
-  }, [slides.length]);
+  }, [slides.length, slideshow.loop]);
 
   useEffect(() => {
     return () => {

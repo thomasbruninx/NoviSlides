@@ -88,6 +88,20 @@ a {
   opacity: 1;
 }
 
+.reveal .fragment.fragment-no-transition {
+  transition: none !important;
+}
+
+.reveal.fragment-resetting .fragment {
+  transition: none !important;
+}
+
+.reveal.fragment-resetting .fragment.visible,
+.reveal.fragment-resetting .fragment.current-fragment {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .slide-element.label {
   white-space: pre-wrap;
 }

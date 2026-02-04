@@ -43,38 +43,74 @@ export default function SlideSection({
             left: element.x,
             top: element.y,
             width: element.width,
-            height: element.height,
+            height: element.height
+          };
+          const contentStyle: CSSProperties = {
+            width: '100%',
+            height: '100%',
             opacity: element.opacity,
-            transform: `rotate(${element.rotation}deg)`
+            transform: `rotate(${element.rotation}deg)`,
+            transformOrigin: 'top left'
           };
 
           if (isLabel) {
             const data = element.dataJson as Record<string, unknown>;
+            const animationDurationMs =
+              typeof data.animationDurationMs === 'number' ? data.animationDurationMs : undefined;
+            const animationDelayMs =
+              typeof data.animationDelayMs === 'number' ? data.animationDelayMs : undefined;
             const isBold = (data.bold as boolean | undefined) ?? false;
             const isItalic = (data.italic as boolean | undefined) ?? false;
             const isUnderline = (data.underline as boolean | undefined) ?? false;
+            const fragmentStyle: CSSProperties = {
+              ...style,
+              ...(fragmentClass && animationDurationMs !== undefined
+                ? { transitionDuration: `${animationDurationMs}ms` }
+                : {}),
+              ...(fragmentClass && animationDelayMs !== undefined
+                ? { transitionDelay: `${animationDelayMs}ms` }
+                : {})
+            };
             return (
               <div
                 key={element.id}
                 className={clsx('slide-element', 'label', fragmentClass && 'fragment', fragmentClass)}
                 data-fragment-index={fragmentIndex}
-                style={{
-                  ...style,
-                  color: (data.color as string) ?? '#fff',
-                  fontSize: (data.fontSize as number) ?? 32,
-                  fontFamily: (data.fontFamily as string) ?? 'Segoe UI, Arial',
-                  textAlign: (data.align as 'left' | 'center' | 'right') ?? 'left',
-                  fontWeight: isBold ? '700' : '400',
-                  fontStyle: isItalic ? 'italic' : 'normal',
-                  textDecoration: isUnderline ? 'underline' : 'none'
-                }}
+                style={fragmentStyle}
               >
-                {data.text as string}
+                <div
+                  style={{
+                    ...contentStyle,
+                    color: (data.color as string) ?? '#fff',
+                    fontSize: (data.fontSize as number) ?? 32,
+                    fontFamily: (data.fontFamily as string) ?? 'Segoe UI, Arial',
+                    textAlign: (data.align as 'left' | 'center' | 'right') ?? 'left',
+                    fontWeight: isBold ? '700' : '400',
+                    fontStyle: isItalic ? 'italic' : 'normal',
+                    textDecoration: isUnderline ? 'underline' : 'none',
+                    whiteSpace: 'pre-wrap'
+                  }}
+                >
+                  {data.text as string}
+                </div>
               </div>
             );
           }
 
           const data = element.dataJson as Record<string, unknown>;
+          const animationDurationMs =
+            typeof data.animationDurationMs === 'number' ? data.animationDurationMs : undefined;
+          const animationDelayMs =
+            typeof data.animationDelayMs === 'number' ? data.animationDelayMs : undefined;
+          const fragmentStyle: CSSProperties = {
+            ...style,
+            ...(fragmentClass && animationDurationMs !== undefined
+              ? { transitionDuration: `${animationDurationMs}ms` }
+              : {}),
+            ...(fragmentClass && animationDelayMs !== undefined
+              ? { transitionDelay: `${animationDelayMs}ms` }
+              : {})
+          };
           if (element.type === 'shape') {
             const shape = (data.shape as string) ?? 'rectangle';
             const fill = (data.fill as string) ?? '#2b3447';
@@ -85,41 +121,43 @@ export default function SlideSection({
                 key={element.id}
                 className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
                 data-fragment-index={fragmentIndex}
-                style={style}
+                style={fragmentStyle}
               >
-                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  {shape === 'circle' ? (
-                    <ellipse
-                      cx="50"
-                      cy="50"
-                      rx="50"
-                      ry="50"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeWidth}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  ) : shape === 'triangle' ? (
-                    <polygon
-                      points="50,0 100,100 0,100"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeWidth}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  ) : (
-                    <rect
-                      x="0"
-                      y="0"
-                      width="100"
-                      height="100"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeWidth}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  )}
-                </svg>
+                <div style={contentStyle}>
+                  <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    {shape === 'circle' ? (
+                      <ellipse
+                        cx="50"
+                        cy="50"
+                        rx="50"
+                        ry="50"
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth={strokeWidth}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ) : shape === 'triangle' ? (
+                      <polygon
+                        points="50,0 100,100 0,100"
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth={strokeWidth}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ) : (
+                      <rect
+                        x="0"
+                        y="0"
+                        width="100"
+                        height="100"
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth={strokeWidth}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    )}
+                  </svg>
+                </div>
               </div>
             );
           }
@@ -131,27 +169,29 @@ export default function SlideSection({
               key={element.id}
               className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
               data-fragment-index={fragmentIndex}
-              style={style}
+              style={fragmentStyle}
             >
               {path ? (
-                isVideo ? (
-                  <video
-                    src={path}
-                    autoPlay={(data.autoplay as boolean | undefined) ?? false}
-                    loop={(data.loop as boolean | undefined) ?? true}
-                    muted={((data.autoplay as boolean | undefined) ?? false) ? true : ((data.muted as boolean | undefined) ?? true)}
-                    controls={(data.controls as boolean | undefined) ?? false}
-                    playsInline
-                    preload="metadata"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <img
-                    src={path}
-                    alt={(data.originalName as string | undefined) ?? ''}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                )
+                <div style={contentStyle}>
+                  {isVideo ? (
+                    <video
+                      src={path}
+                      autoPlay={(data.autoplay as boolean | undefined) ?? false}
+                      loop={(data.loop as boolean | undefined) ?? true}
+                      muted={((data.autoplay as boolean | undefined) ?? false) ? true : ((data.muted as boolean | undefined) ?? true)}
+                      controls={(data.controls as boolean | undefined) ?? false}
+                      playsInline
+                      preload="metadata"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <img
+                      src={path}
+                      alt={(data.originalName as string | undefined) ?? ''}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
+                </div>
               ) : null}
             </div>
           );

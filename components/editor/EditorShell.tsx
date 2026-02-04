@@ -946,7 +946,7 @@ export default function EditorShell() {
                 <Button size="xs" variant="light" onClick={() => setShowSlides(true)} disabled={!selectedScreenId}>
                   Slides
                 </Button>
-                <Button size="xs" onClick={handleAddLabel} disabled={!selectedSlideId}>
+                <Button size="xs" variant="light" onClick={handleAddLabel} disabled={!selectedSlideId}>
                   Add Label
                 </Button>
                 <Button size="xs" variant="light" onClick={handleAddMedia} disabled={!selectedSlideId}>

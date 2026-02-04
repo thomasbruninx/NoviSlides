@@ -21,8 +21,34 @@ declare module 'reveal.js' {
     sync(): void;
     layout(): void;
     destroy(): void;
-    on(eventName: string, callback: (event: { currentSlide?: HTMLElement | null }) => void): void;
-    off(eventName: string, callback: (event: { currentSlide?: HTMLElement | null }) => void): void;
+    on(eventName: string, callback: (event: {
+      currentSlide?: HTMLElement | null;
+      previousSlide?: HTMLElement | null;
+      indexh?: number;
+      indexv?: number;
+      origin?: string;
+      data?: {
+        currentSlide?: HTMLElement | null;
+        previousSlide?: HTMLElement | null;
+        indexh?: number;
+        indexv?: number;
+        origin?: string;
+      };
+    }) => void): void;
+    off(eventName: string, callback: (event: {
+      currentSlide?: HTMLElement | null;
+      previousSlide?: HTMLElement | null;
+      indexh?: number;
+      indexv?: number;
+      origin?: string;
+      data?: {
+        currentSlide?: HTMLElement | null;
+        previousSlide?: HTMLElement | null;
+        indexh?: number;
+        indexv?: number;
+        origin?: string;
+      };
+    }) => void): void;
     getCurrentSlide(): HTMLElement | null;
   }
 

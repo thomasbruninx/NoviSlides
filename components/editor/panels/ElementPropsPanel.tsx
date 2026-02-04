@@ -174,6 +174,18 @@ export default function ElementPropsPanel({
         value={element.animation}
         onChange={(val) => onChange({ animation: (val ?? 'none') as SlideElementAnimation })}
       />
+      <NumberInput
+        label="Animation duration (ms)"
+        value={(data.animationDurationMs as number | null | undefined) ?? undefined}
+        onChange={(val) => updateData({ animationDurationMs: val === '' ? null : toNumber(val) })}
+        min={0}
+      />
+      <NumberInput
+        label="Animation delay (ms)"
+        value={(data.animationDelayMs as number | null | undefined) ?? undefined}
+        onChange={(val) => updateData({ animationDelayMs: val === '' ? null : toNumber(val) })}
+        min={0}
+      />
 
       {element.type === 'label' ? (
         <>

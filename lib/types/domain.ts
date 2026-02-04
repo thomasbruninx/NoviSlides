@@ -1,14 +1,19 @@
 export type SlideElementType = 'image' | 'label' | 'video' | 'shape';
 export type SlideElementAnimation = 'none' | 'fade' | 'zoom' | 'appear';
 
-export type SlideElementDataImage = {
+export type SlideElementDataBase = {
+  animationDurationMs?: number | null;
+  animationDelayMs?: number | null;
+};
+
+export type SlideElementDataImage = SlideElementDataBase & {
   mediaAssetId?: string;
   path?: string;
   originalName?: string;
   crop?: { x: number; y: number; width: number; height: number };
 };
 
-export type SlideElementDataVideo = {
+export type SlideElementDataVideo = SlideElementDataBase & {
   mediaAssetId?: string;
   path?: string;
   autoplay?: boolean;
@@ -17,7 +22,7 @@ export type SlideElementDataVideo = {
   controls?: boolean;
 };
 
-export type SlideElementDataLabel = {
+export type SlideElementDataLabel = SlideElementDataBase & {
   text: string;
   fontSize: number;
   fontFamily: string;
@@ -28,7 +33,7 @@ export type SlideElementDataLabel = {
   underline?: boolean;
 };
 
-export type SlideElementDataShape = {
+export type SlideElementDataShape = SlideElementDataBase & {
   shape: 'rectangle' | 'circle' | 'triangle';
   fill: string;
   stroke?: string;
