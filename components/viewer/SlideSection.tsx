@@ -75,6 +75,54 @@ export default function SlideSection({
           }
 
           const data = element.dataJson as Record<string, unknown>;
+          if (element.type === 'shape') {
+            const shape = (data.shape as string) ?? 'rectangle';
+            const fill = (data.fill as string) ?? '#2b3447';
+            const stroke = (data.stroke as string) ?? '#6b7aa6';
+            const strokeWidth = (data.strokeWidth as number) ?? 2;
+            return (
+              <div
+                key={element.id}
+                className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
+                data-fragment-index={fragmentIndex}
+                style={style}
+              >
+                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {shape === 'circle' ? (
+                    <ellipse
+                      cx="50"
+                      cy="50"
+                      rx="50"
+                      ry="50"
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={strokeWidth}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  ) : shape === 'triangle' ? (
+                    <polygon
+                      points="50,0 100,100 0,100"
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={strokeWidth}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  ) : (
+                    <rect
+                      x="0"
+                      y="0"
+                      width="100"
+                      height="100"
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={strokeWidth}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  )}
+                </svg>
+              </div>
+            );
+          }
           const isVideo = element.type === 'video';
           const path = resolveMediaPath(data.path as string | undefined);
 

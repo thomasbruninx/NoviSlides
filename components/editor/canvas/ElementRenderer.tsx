@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Group, Rect, Text, Image as KonvaImage } from 'react-konva';
+import { Group, Rect, Text, Image as KonvaImage, Shape } from 'react-konva';
 import useImage from 'use-image';
 import type Konva from 'konva';
 import type { SlideElementDto } from '@/lib/types';
@@ -129,6 +129,40 @@ export default function ElementRenderer({
           fontFamily="Plus Jakarta Sans, Segoe UI, Arial"
         />
       </Group>
+    );
+  }
+
+  if (element.type === 'shape') {
+    const data = element.dataJson as Record<string, unknown>;
+    const shape = (data.shape as string) ?? 'rectangle';
+    const fill = (data.fill as string) ?? '#2b3447';
+    const stroke = (data.stroke as string) ?? '#6b7aa6';
+    const strokeWidth = (data.strokeWidth as number) ?? 2;
+
+    return (
+      <Shape
+        ref={refCallback}
+        {...commonProps}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        sceneFunc={(ctx, node) => {
+          const width = node.width();
+          const height = node.height();
+          ctx.beginPath();
+          if (shape === 'circle') {
+            ctx.ellipse(width / 2, height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+          } else if (shape === 'triangle') {
+            ctx.moveTo(width / 2, 0);
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+          } else {
+            ctx.rect(0, 0, width, height);
+          }
+          ctx.fillStrokeShape(node);
+        }}
+      />
     );
   }
 

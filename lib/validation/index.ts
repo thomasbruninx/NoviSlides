@@ -63,7 +63,7 @@ export const reorderSlidesSchema = z.object({
   orderedIds: z.array(z.string().min(1)).min(1)
 });
 
-export const slideElementTypeSchema = z.enum(['image', 'label', 'video']);
+export const slideElementTypeSchema = z.enum(['image', 'label', 'video', 'shape']);
 export const slideElementAnimationSchema = z.enum(['none', 'fade', 'zoom', 'appear']);
 
 export const createElementSchema = z.object({

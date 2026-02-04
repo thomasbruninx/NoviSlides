@@ -1,4 +1,4 @@
-export type SlideElementType = 'image' | 'label' | 'video';
+export type SlideElementType = 'image' | 'label' | 'video' | 'shape';
 export type SlideElementAnimation = 'none' | 'fade' | 'zoom' | 'appear';
 
 export type SlideElementDataImage = {
@@ -28,7 +28,18 @@ export type SlideElementDataLabel = {
   underline?: boolean;
 };
 
-export type SlideElementData = SlideElementDataImage | SlideElementDataVideo | SlideElementDataLabel;
+export type SlideElementDataShape = {
+  shape: 'rectangle' | 'circle' | 'triangle';
+  fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+};
+
+export type SlideElementData =
+  | SlideElementDataImage
+  | SlideElementDataVideo
+  | SlideElementDataLabel
+  | SlideElementDataShape;
 
 export type SlideElementDto = {
   id: string;

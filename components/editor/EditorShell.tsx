@@ -10,6 +10,7 @@ import {
   Divider,
   Group,
   Loader,
+  Menu,
   Paper,
   ScrollArea,
   Stack,
@@ -74,7 +75,7 @@ export default function EditorShell() {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const saveDeadlineRef = useRef<number | null>(null);
-  const flushPendingSavesRef = useRef<() => void>(() => {});
+  const flushPendingSavesRef = useRef<() => Promise<boolean>>(async () => true);
   const [saveCountdownMs, setSaveCountdownMs] = useState<number | null>(null);
   const editVersionRef = useRef(0);
 
@@ -431,7 +432,7 @@ export default function EditorShell() {
     }
   }, [updateCountdown, SAVE_DELAY_MS]);
 
-  const flushPendingSaves = useCallback(async (): Promise<void> => {
+  const flushPendingSaves = useCallback(async (): Promise<boolean> => {
     const slideUpdates = Array.from(pendingSlideUpdatesRef.current.entries());
     const elementUpdates = Array.from(pendingElementUpdatesRef.current.entries());
     const slideshowUpdates = Array.from(pendingSlideshowUpdatesRef.current.entries());
@@ -445,7 +446,7 @@ export default function EditorShell() {
     setSaveCountdownMs(null);
 
     if (!slideUpdates.length && !elementUpdates.length && !slideshowUpdates.length) {
-      return;
+      return true;
     }
 
     const flushVersion = editVersionRef.current;
@@ -530,6 +531,7 @@ export default function EditorShell() {
       queryClient.invalidateQueries({ queryKey: ['slideshows'] });
       setIsDirty(false);
     }
+    return retriable.length === 0;
   }, [clearSaveTimers, queryClient, scheduleSave, updateElementMutation, updateSlideMutation, updateSlideshowMutation]);
 
   const queueSlideSave = useCallback(
@@ -575,9 +577,7 @@ export default function EditorShell() {
   );
 
   useEffect(() => {
-    flushPendingSavesRef.current = () => {
-      void flushPendingSaves();
-    };
+    flushPendingSavesRef.current = flushPendingSaves;
   }, [flushPendingSaves]);
 
   useEffect(() => {
@@ -696,8 +696,13 @@ export default function EditorShell() {
     queueElementSave(id, sanitized);
   };
 
-  const handleAddLabel = () => {
+  const handleAddLabel = async () => {
     if (!selectedSlideId) return;
+    const saved = await flushPendingSavesRef.current();
+    if (!saved) {
+      notifications.show({ color: 'red', message: 'Save failed. Resolve errors before adding elements.' });
+      return;
+    }
     const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
     createElementMutation.mutate({
       type: 'label',
@@ -718,7 +723,34 @@ export default function EditorShell() {
     setShowMediaLibrary(true);
   };
 
-  const handleMediaSelected = (asset: MediaAssetDto) => {
+  const handleAddShape = async (shape: 'rectangle' | 'circle' | 'triangle') => {
+    if (!selectedSlideId) return;
+    const saved = await flushPendingSavesRef.current();
+    if (!saved) {
+      notifications.show({ color: 'red', message: 'Save failed. Resolve errors before adding elements.' });
+      return;
+    }
+    const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
+    createElementMutation.mutate({
+      type: 'shape',
+      x: 160,
+      y: 160,
+      width: 320,
+      height: 220,
+      rotation: 0,
+      opacity: 1,
+      zIndex: nextZ,
+      animation: 'none',
+      dataJson: {
+        shape,
+        fill: '#2b3447',
+        stroke: '#6b7aa6',
+        strokeWidth: 2
+      }
+    });
+  };
+
+  const handleMediaSelected = async (asset: MediaAssetDto) => {
     if (!mediaIntent) return false;
     if (mediaIntent.type === 'slide-background') {
       if (asset.kind !== 'image') {
@@ -749,6 +781,11 @@ export default function EditorShell() {
     }
 
     if (!selectedSlideId) return false;
+    const saved = await flushPendingSavesRef.current();
+    if (!saved) {
+      notifications.show({ color: 'red', message: 'Save failed. Resolve errors before adding elements.' });
+      return false;
+    }
     const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
     const placement = calculateMediaPlacement(asset);
     const isVideo = asset.kind === 'video';
@@ -807,7 +844,7 @@ export default function EditorShell() {
       pendingSlideshowUpdatesRef.current.size > 0;
 
     if (hasPending) {
-      flushPendingSavesRef.current();
+      void flushPendingSavesRef.current();
       return;
     }
 
@@ -915,6 +952,18 @@ export default function EditorShell() {
                 <Button size="xs" variant="light" onClick={handleAddMedia} disabled={!selectedSlideId}>
                   Add Media
                 </Button>
+                <Menu position="bottom-start" shadow="md">
+                  <Menu.Target>
+                    <Button size="xs" variant="light" disabled={!selectedSlideId}>
+                      Add Shape
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item onClick={() => handleAddShape('rectangle')}>Rectangle</Menu.Item>
+                    <Menu.Item onClick={() => handleAddShape('circle')}>Circle</Menu.Item>
+                    <Menu.Item onClick={() => handleAddShape('triangle')}>Triangle</Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
                 <Button size="xs" variant="subtle" onClick={handleBringForward} disabled={!selectedElement}>
                   Bring Forward
                 </Button>
@@ -1038,8 +1087,8 @@ export default function EditorShell() {
           setShowMediaLibrary(false);
           setMediaIntent(null);
         }}
-        onSelect={(asset) => {
-          const shouldClose = handleMediaSelected(asset);
+        onSelect={async (asset) => {
+          const shouldClose = await handleMediaSelected(asset);
           if (shouldClose) {
             setShowMediaLibrary(false);
             setMediaIntent(null);

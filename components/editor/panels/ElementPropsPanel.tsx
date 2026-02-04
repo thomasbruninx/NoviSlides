@@ -2,7 +2,7 @@
 'use client';
 
 import { Stack, Text, NumberInput, Select, TextInput, ColorInput, SegmentedControl, Switch, Group, Button, Box } from '@mantine/core';
-import type { SlideElementAnimation, SlideElementDto } from '@/lib/types';
+import type { SlideElementAnimation, SlideElementDto, SlideElementDataShape } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 
 const animationOptions: Array<{ value: SlideElementAnimation; label: string }> = [
@@ -119,6 +119,35 @@ export default function ElementPropsPanel({
             label="Controls"
             checked={(data.controls as boolean | undefined) ?? false}
             onChange={(event) => updateData({ controls: event.currentTarget.checked })}
+          />
+        </>
+      ) : element.type === 'shape' ? (
+        <>
+          <Select
+            label="Shape"
+            data={[
+              { value: 'rectangle', label: 'Rectangle' },
+              { value: 'circle', label: 'Circle' },
+              { value: 'triangle', label: 'Triangle' }
+            ]}
+            value={(data.shape as SlideElementDataShape['shape']) ?? 'rectangle'}
+            onChange={(value) => updateData({ shape: (value ?? 'rectangle') as SlideElementDataShape['shape'] })}
+          />
+          <ColorInput
+            label="Fill"
+            value={(data.fill as string) ?? '#2b3447'}
+            onChange={(value) => updateData({ fill: value })}
+          />
+          <ColorInput
+            label="Border color"
+            value={(data.stroke as string) ?? '#6b7aa6'}
+            onChange={(value) => updateData({ stroke: value })}
+          />
+          <NumberInput
+            label="Border width"
+            value={(data.strokeWidth as number) ?? 2}
+            onChange={(val) => updateData({ strokeWidth: toNumber(val) })}
+            min={0}
           />
         </>
       ) : (
