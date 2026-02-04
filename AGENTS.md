@@ -110,7 +110,7 @@ If a file grows beyond ~300 lines, **split it**.
 
 ### 4.4 Slide Elements
 
-- Types: `image`, `label`
+- Types: `image`, `video`, `label`
 - Positioned in **logical screen coordinates**
 - Viewer scales them uniformly — editor never stores viewport-scaled values
 - zIndex is meaningful and must be preserved

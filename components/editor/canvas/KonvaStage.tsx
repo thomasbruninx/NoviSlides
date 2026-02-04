@@ -85,7 +85,7 @@ export default function KonvaStage({
           tabIndex={-1}
           style={{ outline: 'none' }}
         >
-          <Layer>
+          <Layer listening={false}>
             <Rect width={screen.width} height={screen.height} fill={slide?.backgroundColor ?? '#0b0f18'} />
             {backgroundImage ? (
               <KonvaImage image={backgroundImage} width={screen.width} height={screen.height} />
