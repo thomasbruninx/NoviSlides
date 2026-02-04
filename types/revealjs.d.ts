@@ -21,6 +21,9 @@ declare module 'reveal.js' {
     sync(): void;
     layout(): void;
     destroy(): void;
+    on(eventName: string, callback: (event: { currentSlide?: HTMLElement | null }) => void): void;
+    off(eventName: string, callback: (event: { currentSlide?: HTMLElement | null }) => void): void;
+    getCurrentSlide(): HTMLElement | null;
   }
 
   export default Reveal;

@@ -284,6 +284,10 @@ export default function EditorShell() {
         body: JSON.stringify(attrs)
       }),
     onError: (error: Error) => {
+      const code = (error as Error & { code?: string }).code;
+      if (code === 'not_found') {
+        return;
+      }
       notifications.show({ color: 'red', message: error.message });
     }
   });
@@ -297,7 +301,10 @@ export default function EditorShell() {
 
   const deleteElementMutation = useMutation({
     mutationFn: (id: string) => apiFetch<SlideElementDto>(`/api/elements/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
+    onSuccess: (_deleted, id) => {
+      pendingElementUpdatesRef.current.delete(id);
+      undoStack.current = undoStack.current.filter((entry) => entry.id !== id);
+      redoStack.current = redoStack.current.filter((entry) => entry.id !== id);
       queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
       setSelectedElementId(null);
       notifications.show({ color: 'green', message: 'Element deleted' });
@@ -477,10 +484,15 @@ export default function EditorShell() {
 
     const results = await Promise.allSettled(operations.map((op) => op.promise));
     const failed = operations.filter((_, index) => results[index]?.status === 'rejected');
+    const retriable = failed.filter((_, index) => {
+      const result = results[index] as PromiseRejectedResult | undefined;
+      const reason = result?.reason as { code?: string } | undefined;
+      return reason?.code !== 'not_found';
+    });
     const hadError = failed.length > 0;
 
-    if (hadError) {
-      failed.forEach((op) => {
+    if (retriable.length > 0) {
+      retriable.forEach((op) => {
         if (op.kind === 'slide') {
           const existing = pendingSlideUpdatesRef.current.get(op.id) ?? {};
           pendingSlideUpdatesRef.current.set(op.id, { ...existing, ...(op.attrs as Partial<SlideDto>) });

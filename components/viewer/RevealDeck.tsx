@@ -112,6 +112,73 @@ export default function RevealDeck({
   ]);
 
   useEffect(() => {
+    if (!revealRef.current) return;
+
+    const deck = revealRef.current;
+
+    const restartVideosInSlide = (slide: HTMLElement | null) => {
+      if (!slide) return;
+      const videos = Array.from(slide.querySelectorAll('video'));
+      videos.forEach((video) => {
+        try {
+          video.currentTime = 0;
+        } catch {
+          // Ignore seek errors for streams or blocked playback.
+        }
+
+        const shouldAutoplay = video.autoplay || video.hasAttribute('autoplay');
+        if (shouldAutoplay) {
+          const maybePromise = video.play();
+          if (maybePromise && typeof maybePromise.catch === 'function') {
+            maybePromise.catch(() => {
+              // Autoplay might be blocked; ignore silently.
+            });
+          }
+        } else {
+          video.pause();
+        }
+      });
+    };
+
+    const resetVideosOutsideSlide = (slide: HTMLElement | null) => {
+      const root = deckRef.current?.querySelector('.slides');
+      if (!root) return;
+      const allVideos = Array.from(root.querySelectorAll('video'));
+      allVideos.forEach((video) => {
+        if (slide && slide.contains(video)) return;
+        video.pause();
+        try {
+          video.currentTime = 0;
+        } catch {
+          // Ignore seek errors for streams or blocked playback.
+        }
+      });
+    };
+
+    const handleSlideChange = (event: { currentSlide?: HTMLElement | null }) => {
+      const currentSlide = event.currentSlide ?? deck.getCurrentSlide();
+      resetVideosOutsideSlide(currentSlide ?? null);
+      restartVideosInSlide(currentSlide ?? null);
+    };
+
+    const handleReady = (event: { currentSlide?: HTMLElement | null }) => {
+      const currentSlide = event.currentSlide ?? deck.getCurrentSlide();
+      restartVideosInSlide(currentSlide ?? null);
+    };
+
+    deck.on('slidechanged', handleSlideChange);
+    deck.on('ready', handleReady);
+
+    const initialSlide = deck.getCurrentSlide();
+    restartVideosInSlide(initialSlide ?? null);
+
+    return () => {
+      deck.off('slidechanged', handleSlideChange);
+      deck.off('ready', handleReady);
+    };
+  }, [slides.length]);
+
+  useEffect(() => {
     return () => {
       try {
         revealRef.current?.destroy();

@@ -22,6 +22,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     });
     return ok(toSlideElementDto(updated));
   } catch (error) {
+    if ((error as { code?: string }).code === 'P2025') {
+      return fail('not_found', 'Element not found', 404);
+    }
     if (error instanceof z.ZodError) {
       return fail('validation_error', 'Invalid element payload', 400, error.flatten());
     }
