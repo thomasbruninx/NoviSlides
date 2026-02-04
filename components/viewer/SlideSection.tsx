@@ -30,7 +30,7 @@ export default function SlideSection({
       data-background-color={slide.backgroundColor ?? undefined}
       data-background-image={slide.backgroundImagePath ?? undefined}
       data-transition={slide.transitionOverride ?? undefined}
-      data-auto-slide={slide.autoSlideMsOverride ?? undefined}
+      data-autoslide={slide.autoSlideMsOverride ?? undefined}
       style={{ width: '100%', height: '100%' }}
     >
       <div className="slide-layer">
