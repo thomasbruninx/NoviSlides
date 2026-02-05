@@ -1,35 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { Container, Group, Paper, Stack, Text, Title, Button } from '@mantine/core';
+import Image from 'next/image';
+import { Container, Group, Stack, Text, Title, Button } from '@mantine/core';
 
 export default function HomePage() {
   return (
     <Container size="md" py={80}>
       <Stack gap="xl">
-        <Title order={1}>NoviSlides</Title>
+        <Image src="/assets/NoviSlides.png" alt="NoviSlides Logo" height={100} width={300} style={{ objectFit: "contain" }}/>
+        <Title order={1}>Digital signage content provider</Title>
         <Text c="dimmed">
-          Build, manage, and run slideshows with a lightweight editor and a fast viewer.
+          Manage your digital signage content and resources.
         </Text>
         <Group>
           <Button component={Link} href="/edit" size="md">
             Open Editor
           </Button>
           <Button component={Link} href="/show" variant="light" size="md">
-            View Active Show
+            View Shows and Displays
+          </Button>
+          <Button component={Link} href="/help" variant="light" size="md">
+            View Help
           </Button>
         </Group>
-        <Paper withBorder p="lg" radius="md">
-          <Text fw={600}>Quick Links</Text>
-          <Group mt="md">
-            <Button component={Link} href="/show" variant="subtle">
-              /show
-            </Button>
-            <Button component={Link} href="/show/demo" variant="subtle">
-              /show/[slideshowId]
-            </Button>
-          </Group>
-        </Paper>
       </Stack>
     </Container>
   );

@@ -31,7 +31,7 @@ export default async function ShowPage() {
   return (
     <Container size="md" py={40}>
       <Stack gap="md">
-        <Title order={2}>Available Shows</Title>
+        <Title order={2}>Available Shows and Displays</Title>
         {displays.length ? (
           <>
             <Text c="dimmed">Display endpoints</Text>

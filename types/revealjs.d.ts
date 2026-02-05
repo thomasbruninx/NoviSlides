@@ -56,3 +56,6 @@ declare module 'reveal.js' {
 
   export default Reveal;
 }
+
+declare module 'reveal.js/dist/*.css';
+declare module 'reveal.js/dist/theme/*.css';

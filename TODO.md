@@ -1,5 +1,6 @@
 - Caching mechanism
-- Replace active slide logic with endpoint system
 - "Plug-in" system for custom elements
 - Add authentication system
 - Upgrade outdated dependencies
+- Add "interactive" help view
+- Dockerized deployment
