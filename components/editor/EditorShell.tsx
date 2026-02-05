@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import {
   AppShell,
   Accordion,
@@ -32,7 +32,15 @@ import {
 } from '@nine-thirty-five/material-symbols-react/outlined';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { MediaAssetDto, ScreenDto, SlideDto, SlideElementDto, SlideshowDto, TemplateSummary } from '@/lib/types';
+import type {
+  MediaAssetDto,
+  ScreenDto,
+  SlideDto,
+  SlideElementDto,
+  SlideshowDto,
+  SlideshowExport,
+  TemplateSummary
+} from '@/lib/types';
 import { apiFetch } from '@/lib/utils/api';
 import { resolveMediaPath } from '@/lib/utils/media';
 import SlideshowSidebar from './SlideshowSidebar';
@@ -115,6 +123,7 @@ export default function EditorShell() {
     animation: SlideElementDto['animation'];
     dataJson: SlideElementDto['dataJson'];
   } | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ['templates'],
@@ -324,6 +333,62 @@ export default function EditorShell() {
       notifications.show({ color: 'red', message: error.message });
     }
   });
+
+  const handleExportSlideshow = useCallback(async (slideshowId?: string) => {
+    const id = slideshowId ?? selectedSlideshowId;
+    const slideshow =
+      (slideshowId ? slideshows.find((item) => item.id === slideshowId) : selectedSlideshow) ??
+      null;
+    if (!id || !slideshow) return;
+    try {
+      const payload = await apiFetch<SlideshowExport>(`/api/slideshows/${id}/export`);
+      const fileNameBase = (slideshow.name || 'slideshow')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `${fileNameBase || 'slideshow'}-${timestamp}.json`;
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      notifications.show({ color: 'green', message: 'Slideshow exported' });
+    } catch (error) {
+      notifications.show({ color: 'red', message: (error as Error).message });
+    }
+  }, [selectedSlideshow, selectedSlideshowId, slideshows]);
+
+  const handleImportTrigger = useCallback(() => {
+    importInputRef.current?.click();
+  }, []);
+
+  const handleImportFile = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const imported = await apiFetch<SlideshowDto>('/api/slideshows/import', {
+          method: 'POST',
+          body: JSON.stringify({ data: parsed })
+        });
+        queryClient.invalidateQueries({ queryKey: ['slideshows'] });
+        setSelectedSlideshowId(imported.id);
+        notifications.show({ color: 'green', message: 'Slideshow imported' });
+      } catch (error) {
+        notifications.show({ color: 'red', message: (error as Error).message });
+      }
+    },
+    [queryClient]
+  );
 
   const updateElementMutation = useMutation({
     mutationFn: ({ id, attrs }: { id: string; attrs: Partial<SlideElementDto> }) =>
@@ -1109,6 +1174,8 @@ export default function EditorShell() {
             onActivate={(id) => activateMutation.mutate(id)}
             onDelete={(id) => deleteSlideshowMutation.mutate(id)}
             onCreateDemo={() => createDemoMutation.mutate()}
+            onExport={handleExportSlideshow}
+            onImport={handleImportTrigger}
           />
         </Drawer>
 
@@ -1484,6 +1551,13 @@ export default function EditorShell() {
           mediaIntent?.type === 'element-image' ||
           mediaIntent?.type === 'element-video'
         }
+      />
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json"
+        style={{ display: 'none' }}
+        onChange={handleImportFile}
       />
       <IconLibraryModal
         opened={showIconLibrary}

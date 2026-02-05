@@ -221,7 +221,7 @@ export default function SlideSection({
                   {isVideo ? (
                     <video
                       src={path}
-                      autoPlay={(data.autoplay as boolean | undefined) ?? false}
+                      data-autoplay={((data.autoplay as boolean | undefined) ?? false) ? 'true' : 'false'}
                       loop={(data.loop as boolean | undefined) ?? true}
                       muted={((data.autoplay as boolean | undefined) ?? false) ? true : ((data.muted as boolean | undefined) ?? true)}
                       controls={(data.controls as boolean | undefined) ?? false}

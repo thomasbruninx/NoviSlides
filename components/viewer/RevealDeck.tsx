@@ -22,6 +22,7 @@ export default function RevealDeck({
   const revealRef = useRef<InstanceType<typeof Reveal> | null>(null);
   const isReadyRef = useRef(false);
   const loopResetSlideRef = useRef<HTMLElement | null>(null);
+  const loopResetInProgressRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
   const [isRevealReady, setIsRevealReady] = useState(false);
@@ -254,7 +255,7 @@ export default function RevealDeck({
   ]);
 
   useEffect(() => {
-    if (!revealRef.current) return;
+    if (!revealRef.current || !isRevealReady) return;
 
     const deck = revealRef.current;
 
@@ -268,7 +269,8 @@ export default function RevealDeck({
           // Ignore seek errors for streams or blocked playback.
         }
 
-        const shouldAutoplay = video.autoplay || video.hasAttribute('autoplay');
+        const shouldAutoplay =
+          video.dataset.autoplay === 'true' || video.getAttribute('data-autoplay') === 'true';
         if (shouldAutoplay) {
           const maybePromise = video.play();
           if (maybePromise && typeof maybePromise.catch === 'function') {
@@ -332,9 +334,7 @@ export default function RevealDeck({
 
     const resetFragmentsForLoop = (slide: HTMLElement | null) => {
       if (!slide) return;
-      const fragments = Array.from(
-        slide.querySelectorAll<HTMLElement>('.fragment.visible, .fragment.current-fragment')
-      );
+      const fragments = Array.from(slide.querySelectorAll<HTMLElement>('.fragment'));
       if (fragments.length === 0) return;
       fragments.forEach((fragment) => {
         fragment.classList.add('fragment-no-transition');
@@ -384,23 +384,40 @@ export default function RevealDeck({
           currentInfo.index === 0 &&
           prevInfo.index === prevInfo.total - 1
         ) {
-          if (!loopResetSlideRef.current) {
-            if (currentSlide) {
-              setFragmentResetting(true);
-              resetFragmentsForLoop(currentSlide);
-              loopResetSlideRef.current = currentSlide;
+          if (!loopResetSlideRef.current && currentSlide) {
+            setFragmentResetting(true);
+            resetFragmentsForLoop(currentSlide);
+            loopResetSlideRef.current = currentSlide;
+          }
+          if (typeof deck.getIndices === 'function' && !loopResetInProgressRef.current) {
+            const indices = deck.getIndices() as { h: number; v?: number; f?: number };
+            if (typeof indices?.f === 'number' && indices.f > 0) {
+              loopResetInProgressRef.current = true;
+              deck.slide(indices.h, indices.v ?? 0, 0);
             }
           }
         }
       }
 
       if (loopResetSlideRef.current) {
+        const resetSlide = loopResetSlideRef.current;
         loopResetSlideRef.current = null;
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             setFragmentResetting(false);
+            const fragments = Array.from(
+              resetSlide.querySelectorAll<HTMLElement>('.fragment.fragment-no-transition')
+            );
+            fragments.forEach((fragment) => fragment.classList.remove('fragment-no-transition'));
           });
         });
+      }
+
+      if (loopResetInProgressRef.current && typeof deck.getIndices === 'function') {
+        const indices = deck.getIndices() as { f?: number };
+        if (typeof indices?.f === 'number' && indices.f === 0) {
+          loopResetInProgressRef.current = false;
+        }
       }
     };
 
@@ -421,7 +438,7 @@ export default function RevealDeck({
       deck.off('slidechanged', handleSlideChange);
       deck.off('ready', handleReady);
     };
-  }, [slides.length, slideshow.loop]);
+  }, [slides.length, slideshow.loop, isRevealReady]);
 
   useEffect(() => {
     return () => {

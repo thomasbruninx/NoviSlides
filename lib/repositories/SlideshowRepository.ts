@@ -17,6 +17,27 @@ export class SlideshowRepository {
     });
   }
 
+  async getByIdWithDeck(id: string) {
+    return prisma.slideshow.findUnique({
+      where: { id },
+      include: {
+        screens: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            slides: {
+              orderBy: { orderIndex: 'asc' },
+              include: {
+                elements: {
+                  orderBy: { zIndex: 'asc' }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   async getActive() {
     return prisma.slideshow.findFirst({ where: { isActive: true } });
   }

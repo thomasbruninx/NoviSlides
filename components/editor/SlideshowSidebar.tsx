@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, Stack, Text, TextInput, Select, ScrollArea, Paper, Badge } from '@mantine/core';
+import { Button, Group, Modal, Stack, Text, TextInput, Select, ScrollArea, Paper, Badge, Tooltip } from '@mantine/core';
 import type { SlideshowDto, TemplateSummary } from '@/lib/types';
 
 export default function SlideshowSidebar({
@@ -12,7 +12,9 @@ export default function SlideshowSidebar({
   onCreate,
   onActivate,
   onDelete,
-  onCreateDemo
+  onCreateDemo,
+  onExport,
+  onImport
 }: {
   slideshows: SlideshowDto[];
   selectedId: string | null;
@@ -22,6 +24,8 @@ export default function SlideshowSidebar({
   onActivate: (id: string) => void;
   onDelete: (id: string) => void;
   onCreateDemo: () => void;
+  onExport?: (id: string) => void;
+  onImport?: () => void;
 }) {
   const [opened, setOpened] = useState(false);
   const [name, setName] = useState('');
@@ -43,9 +47,14 @@ export default function SlideshowSidebar({
     <Stack gap="sm" p="md">
       <Group justify="space-between">
         <Text fw={700}>Slideshows</Text>
-        <Button size="xs" onClick={() => setOpened(true)}>
-          Create
-        </Button>
+        <Group gap="xs">
+          <Button size="xs" variant="light" onClick={onImport} disabled={!onImport}>
+            Import
+          </Button>
+          <Button size="xs" onClick={() => setOpened(true)}>
+            Create
+          </Button>
+        </Group>
       </Group>
       <Button variant="light" size="xs" onClick={onCreateDemo}>
         Create Demo
@@ -74,6 +83,17 @@ export default function SlideshowSidebar({
                   </Group>
                 </Stack>
                 <Group gap={4}>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onExport?.(slideshow.id);
+                    }}
+                    disabled={!onExport}
+                  >
+                    Export
+                  </Button>
                   <Button size="xs" variant="light" onClick={(event) => {
                     event.stopPropagation();
                     onActivate(slideshow.id);

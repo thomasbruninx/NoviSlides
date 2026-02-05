@@ -131,3 +131,68 @@ export const iconListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(200).default(60)
 });
+
+export const slideshowExportSchema = z.object({
+  version: z.literal(1),
+  exportedAt: z.string(),
+  slideshow: z.object({
+    name: z.string().min(1),
+    defaultAutoSlideMs: z.number().int().positive(),
+    revealTransition: z.string(),
+    loop: z.boolean(),
+    controls: z.boolean(),
+    autoSlideStoppable: z.boolean(),
+    defaultScreenKey: screenKeySchema
+  }),
+  screens: z.array(
+    z.object({
+      key: screenKeySchema,
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      slides: z.array(
+        z.object({
+          orderIndex: z.number().int().min(0),
+          title: z.string().max(120).optional().nullable(),
+          autoSlideMsOverride: z.number().int().positive().optional().nullable(),
+          backgroundColor: z.string().optional().nullable(),
+          backgroundImagePath: z.string().optional().nullable(),
+          backgroundImageSize: z.enum(['cover', 'contain', 'center']).optional().nullable(),
+          backgroundImagePosition: z
+            .enum([
+              'top-left',
+              'top-center',
+              'top-right',
+              'center-left',
+              'center',
+              'center-right',
+              'bottom-left',
+              'bottom-center',
+              'bottom-right'
+            ])
+            .optional()
+            .nullable(),
+          transitionOverride: z.string().optional().nullable(),
+          elements: z.array(
+            z.object({
+              type: slideElementTypeSchema,
+              x: z.number(),
+              y: z.number(),
+              width: z.number().positive(),
+              height: z.number().positive(),
+              rotation: z.number().optional(),
+              opacity: z.number().min(0).max(1).optional(),
+              zIndex: z.number().int().optional(),
+              animation: slideElementAnimationSchema.optional(),
+              dataJson: z.record(z.any())
+            })
+          )
+        })
+      )
+    })
+  )
+});
+
+export const slideshowImportSchema = z.object({
+  data: slideshowExportSchema,
+  nameOverride: z.string().min(1).optional()
+});

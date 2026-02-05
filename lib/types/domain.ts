@@ -130,6 +130,47 @@ export type ScreenDeckDto = {
   slides: SlideDto[];
 };
 
+export type SlideshowExport = {
+  version: 1;
+  exportedAt: string;
+  slideshow: {
+    name: string;
+    defaultAutoSlideMs: number;
+    revealTransition: string;
+    loop: boolean;
+    controls: boolean;
+    autoSlideStoppable: boolean;
+    defaultScreenKey: string;
+  };
+  screens: Array<{
+    key: string;
+    width: number;
+    height: number;
+    slides: Array<{
+      orderIndex: number;
+      title?: string | null;
+      autoSlideMsOverride?: number | null;
+      backgroundColor?: string | null;
+      backgroundImagePath?: string | null;
+      backgroundImageSize?: SlideBackgroundImageSize | null;
+      backgroundImagePosition?: SlideBackgroundImagePosition | null;
+      transitionOverride?: string | null;
+      elements: Array<{
+        type: SlideElementType;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        rotation: number;
+        opacity: number;
+        zIndex: number;
+        animation: SlideElementAnimation;
+        dataJson: SlideElementData;
+      }>;
+    }>;
+  }>;
+};
+
 export type MediaAssetDto = {
   id: string;
   kind: 'image' | 'video';
