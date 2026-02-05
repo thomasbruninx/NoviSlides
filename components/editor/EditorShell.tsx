@@ -18,6 +18,11 @@ import {
   Text,
   Tooltip
 } from '@mantine/core';
+import { 
+  FlipToFront as FlipToFrontIcon, 
+  FlipToBack as FlipToBackIcon,
+  Delete as DeleteIcon
+} from '@nine-thirty-five/material-symbols-react/outlined';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MediaAssetDto, ScreenDto, SlideDto, SlideElementDto, SlideshowDto, TemplateSummary } from '@/lib/types';
@@ -856,6 +861,11 @@ export default function EditorShell() {
     handleElementCommit(selectedElement.id, { zIndex: Math.max(0, selectedElement.zIndex - 1) });
   };
 
+  const handleDeleteSelected = useCallback(() => {
+    if (!selectedElementId) return;
+    deleteElementMutation.mutate(selectedElementId);
+  }, [deleteElementMutation, selectedElementId]);
+
   const handleSlideshowChange = (attrs: Partial<SlideshowDto>) => {
     if (!selectedSlideshow) return;
     const sanitized = stripUndefined(attrs as Record<string, unknown>) as Partial<SlideshowDto>;
@@ -993,12 +1003,51 @@ export default function EditorShell() {
                     <Menu.Item onClick={() => handleAddShape('triangle')}>Triangle</Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
-                <Button size="xs" variant="subtle" onClick={handleBringForward} disabled={!selectedElement}>
-                  Bring Forward
-                </Button>
-                <Button size="xs" variant="subtle" onClick={handleSendBackward} disabled={!selectedElement}>
-                  Send Back
-                </Button>
+                
+                <Tooltip
+                  label="Bring element forward"
+                  withArrow
+                >
+                  <Button 
+                    size="xs" 
+                    variant="subtle" 
+                    onClick={handleBringForward} 
+                    disabled={!selectedElement}
+                  >
+                    <FlipToFrontIcon />
+                  </Button>
+                </Tooltip>
+                
+                
+                <Tooltip
+                  label="Send element backward"
+                  withArrow
+                >
+                  <Button 
+                    size="xs" 
+                    variant="subtle" 
+                    onClick={handleSendBackward} 
+                    disabled={!selectedElement}
+                  >
+                    <FlipToBackIcon />
+                  </Button>
+                </Tooltip>
+
+                <Tooltip
+                  label="Delete element"
+                  withArrow
+                >
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="red"
+                    onClick={handleDeleteSelected}
+                    disabled={!selectedElement}
+                  >
+                    <DeleteIcon />
+                  </Button>
+                </Tooltip>
+                
               </Group>
               <Group>
                 <Switch
