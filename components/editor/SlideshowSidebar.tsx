@@ -73,7 +73,7 @@ export default function SlideshowSidebar({
                 borderColor: slideshow.id === selectedId ? '#54b3ff' : undefined
               }}
             >
-              <Group justify="space-between" wrap="nowrap">
+              <Group justify="space-between" wrap="wrap">
                 <Stack gap={2}>
                   <Text size="sm" fw={600}>
                     {slideshow.name}
