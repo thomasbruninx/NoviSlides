@@ -5,7 +5,11 @@ A lightweight digital signage content provider, built as a full-stack web applic
 ## Features
 - Viewer endpoints for active and specific slideshows/screens
 - Live refresh for viewer devices via SSE with polling fallback
-- WYSIWYG editor with drag/drop, resize, layers, and label editing
+- WYSIWYG editor with drag/drop, resize, layers, ...
+- Slides with text, images, videos, shapes, and more
+- Animations and transitions via Reveal.js
+- Use Google Fonts in text elements (if free API key provided)
+- Use Google Material Icons in icon elements
 - Media Library with image + video assets
 - Multi-screen decks with locked resolutions (default 1920 x 540)
 - Template system with default starter template
@@ -42,7 +46,7 @@ npm run prisma:migrate
 npm run dev
 ```
 
-Important: SSE doesn't work in development mode, so live refresh of the viewer doesn't get triggered when saving changes in the editor
+Important: SSE doesn't work in development mode, live refresh of the viewer falls back to long polling.
 
 ## Setup
 Deploy a production-ready version
@@ -116,5 +120,4 @@ Video playback notes:
 - `public/uploads/` uploaded assets
 
 ## Disclaimer on the use of AI
-
 This project has been developed with the assistance of AI tools (notably GitHub Copilot and ChatGPT Codex) to help speed up development and provide code suggestions. While these tools can be helpful, they may also introduce code that is suboptimal, insecure, or incorrect. Which I experienced firsthand while reviewing and debugging the generated code. I don't blindly trust AI-generated code, and neither should you. Always review, test, and validate any code produced with the help of AI tools.

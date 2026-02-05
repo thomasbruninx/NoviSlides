@@ -23,6 +23,7 @@ import {
   FlipToBack as FlipToBackIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
+  ContentCopy as ContentCopyIcon,
   GridGoldenratio as GridGoldenratioIcon,
   Settings as SettingsIcon
 } from '@nine-thirty-five/material-symbols-react/outlined';
@@ -925,6 +926,29 @@ export default function EditorShell() {
     handleElementCommit(selectedElement.id, { zIndex: Math.max(0, selectedElement.zIndex - 1) });
   };
 
+  const handleDuplicateSelected = useCallback(async () => {
+    if (!selectedElement || !selectedSlideId) return;
+    const saved = await flushPendingSavesRef.current();
+    if (!saved) {
+      notifications.show({ color: 'red', message: 'Save failed. Resolve errors before duplicating.' });
+      return;
+    }
+    const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
+    const offset = 20;
+    createElementMutation.mutate({
+      type: selectedElement.type,
+      x: selectedElement.x + offset,
+      y: selectedElement.y + offset,
+      width: selectedElement.width,
+      height: selectedElement.height,
+      rotation: selectedElement.rotation,
+      opacity: selectedElement.opacity,
+      zIndex: nextZ,
+      animation: selectedElement.animation,
+      dataJson: selectedElement.dataJson
+    });
+  }, [createElementMutation, selectedElement, selectedSlide, selectedSlideId]);
+
   const handleDeleteSelected = useCallback(() => {
     if (!selectedElementId) return;
     deleteElementMutation.mutate(selectedElementId);
@@ -1121,6 +1145,20 @@ export default function EditorShell() {
                     disabled={!selectedElement}
                   >
                     <DeleteIcon />
+                  </Button>
+                </Tooltip>
+
+                <Tooltip
+                  label="Duplicate element"
+                  withArrow
+                >
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    onClick={handleDuplicateSelected}
+                    disabled={!selectedElement}
+                  >
+                    <ContentCopyIcon />
                   </Button>
                 </Tooltip>
                 

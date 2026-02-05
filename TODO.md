@@ -2,4 +2,3 @@
 - Replace active slide logic with endpoint system
 - Add authentication system
 - Upgrade outdated dependencies
-- Add more element types (material icons, etc.)
