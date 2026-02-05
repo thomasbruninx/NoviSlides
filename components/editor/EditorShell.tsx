@@ -58,6 +58,8 @@ const stripUndefined = <T extends Record<string, unknown>>(attrs: T): Partial<T>
   return Object.fromEntries(Object.entries(attrs).filter(([, value]) => value !== undefined)) as Partial<T>;
 };
 
+const CLIPBOARD_KEY = 'noviSlides.elementClipboard';
+
 export default function EditorShell() {
   const SAVE_DELAY_MS = 15000;
   const queryClient = useQueryClient();
@@ -99,6 +101,15 @@ export default function EditorShell() {
   const flushPendingSavesRef = useRef<() => Promise<boolean>>(async () => true);
   const [saveCountdownMs, setSaveCountdownMs] = useState<number | null>(null);
   const editVersionRef = useRef(0);
+  const clipboardRef = useRef<{
+    type: SlideElementDto['type'];
+    width: number;
+    height: number;
+    rotation: number;
+    opacity: number;
+    animation: SlideElementDto['animation'];
+    dataJson: SlideElementDto['dataJson'];
+  } | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: ['templates'],
@@ -425,6 +436,29 @@ export default function EditorShell() {
     setIsDirty(true);
   }, []);
 
+  const setClipboard = useCallback((payload: NonNullable<typeof clipboardRef.current>) => {
+    clipboardRef.current = payload;
+    try {
+      localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore localStorage errors (private mode, quota).
+    }
+  }, []);
+
+  const getClipboard = useCallback(() => {
+    if (clipboardRef.current) return clipboardRef.current;
+    try {
+      const stored = localStorage.getItem(CLIPBOARD_KEY);
+      if (!stored) return null;
+      const parsed = JSON.parse(stored) as NonNullable<typeof clipboardRef.current>;
+      if (!parsed || !parsed.type) return null;
+      clipboardRef.current = parsed;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const clearSaveTimers = useCallback(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -622,6 +656,55 @@ export default function EditorShell() {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
       }
+      const key = event.key.toLowerCase();
+      const isCopy = (event.ctrlKey || event.metaKey) && key === 'c';
+      const isPaste = (event.ctrlKey || event.metaKey) && key === 'v';
+      if (isCopy) {
+        if (!selectedElement) return;
+        event.preventDefault();
+        setClipboard({
+          type: selectedElement.type,
+          width: selectedElement.width,
+          height: selectedElement.height,
+          rotation: selectedElement.rotation,
+          opacity: selectedElement.opacity,
+          animation: selectedElement.animation,
+          dataJson: selectedElement.dataJson
+        });
+        notifications.show({ color: 'green', message: 'Element copied' });
+        return;
+      }
+      if (isPaste) {
+        event.preventDefault();
+        void (async () => {
+          if (!selectedSlideId) return;
+          const clipboard = getClipboard();
+          if (!clipboard) {
+            notifications.show({ color: 'yellow', message: 'Clipboard is empty' });
+            return;
+          }
+          const saved = await flushPendingSavesRef.current();
+          if (!saved) {
+            notifications.show({ color: 'red', message: 'Save failed. Resolve errors before pasting.' });
+            return;
+          }
+          const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
+          const offset = 24;
+          createElementMutation.mutate({
+            type: clipboard.type,
+            x: 160 + offset,
+            y: 160 + offset,
+            width: clipboard.width,
+            height: clipboard.height,
+            rotation: clipboard.rotation,
+            opacity: clipboard.opacity,
+            zIndex: nextZ,
+            animation: clipboard.animation,
+            dataJson: clipboard.dataJson
+          });
+        })();
+        return;
+      }
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
         event.preventDefault();
         deleteElementMutation.mutate(selectedElementId);
@@ -649,7 +732,19 @@ export default function EditorShell() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedElementId, deleteElementMutation, markDirty, queueElementSave, updateElementLocal]);
+  }, [
+    createElementMutation,
+    deleteElementMutation,
+    getClipboard,
+    markDirty,
+    queueElementSave,
+    selectedElement,
+    selectedElementId,
+    selectedSlide,
+    selectedSlideId,
+    setClipboard,
+    updateElementLocal
+  ]);
 
   const handleSelectSlide = (id: string) => {
     if (isDirty && !window.confirm('You have unsaved changes. Continue?')) return;
