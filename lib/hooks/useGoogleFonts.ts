@@ -1,15 +1,10 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-
-const SYSTEM_FONTS = new Set(['sans-serif', 'serif', 'monospace']);
+import { isSystemFont, normalizeFont } from '@/lib/utils/fonts';
 const FONT_USE_COUNT = new Map<string, number>();
 const LINK_ID = 'google-fonts-dynamic';
-
-const normalizeFont = (font: string) => {
-  const primary = font.split(',')[0]?.trim() ?? '';
-  return primary.replace(/^['"]|['"]$/g, '');
-};
+const EVENT_NAME = 'novi-google-fonts-loaded';
 
 const buildHref = (families: string[]) => {
   if (!families.length) return null;
@@ -32,7 +27,21 @@ const updateLink = () => {
     return;
   }
 
+  const ensureListener = (link: HTMLLinkElement) => {
+    if (link.getAttribute('data-novi-listener') === 'true') return;
+    link.setAttribute('data-novi-listener', 'true');
+    link.addEventListener('load', () => {
+      if (typeof window === 'undefined') return;
+      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { href: link.href } }));
+    });
+    link.addEventListener('error', () => {
+      if (typeof window === 'undefined') return;
+      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { href: link.href, error: true } }));
+    });
+  };
+
   if (existing) {
+    ensureListener(existing);
     if (existing.getAttribute('data-href') === href) return;
     existing.setAttribute('data-href', href);
     existing.href = href;
@@ -44,6 +53,7 @@ const updateLink = () => {
   link.rel = 'stylesheet';
   link.href = href;
   link.setAttribute('data-href', href);
+  ensureListener(link);
   document.head.appendChild(link);
 };
 
@@ -53,7 +63,7 @@ export function useGoogleFonts(families: string[]) {
     families.forEach((family) => {
       if (!family) return;
       const primary = normalizeFont(family);
-      if (!primary || SYSTEM_FONTS.has(primary)) return;
+      if (!primary || isSystemFont(primary)) return;
       unique.add(primary);
     });
     return Array.from(unique).sort();

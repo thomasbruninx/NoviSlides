@@ -6,19 +6,26 @@ import useImage from 'use-image';
 import type Konva from 'konva';
 import type { SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
+import { buildFontSpec, isSystemFont } from '@/lib/utils/fonts';
 
 export default function ElementRenderer({
   element,
   isSelected,
   registerRef,
   onSelect,
-  onCommit
+  onCommit,
+  onDragStart,
+  onDragMove,
+  onDragEnd
 }: {
   element: SlideElementDto;
   isSelected: boolean;
   registerRef: (node: Konva.Node | null) => void;
   onSelect: () => void;
-  onCommit: (attrs: Partial<SlideElementDto>) => void;
+  onCommit: (attrs: Partial<SlideElementDto>, options?: { skipGridSnap?: boolean }) => void;
+  onDragStart?: (id: string) => void;
+  onDragMove?: (payload: { id: string; node: Konva.Node; width: number; height: number }) => void;
+  onDragEnd?: (id: string) => void;
 }) {
   const localRef = useRef<Konva.Node | null>(null);
   const rawPath = element.type === 'image' ? ((element.dataJson as Record<string, unknown>).path as string) : '';
@@ -74,6 +81,39 @@ export default function ElementRenderer({
     };
   }, [element.type, videoPath]);
 
+  useEffect(() => {
+    if (element.type !== 'label') return;
+    if (!document.fonts?.load) return;
+    const data = element.dataJson as Record<string, unknown>;
+    const fontFamily = (data.fontFamily as string) ?? 'Segoe UI, Arial';
+    const fontSize = (data.fontSize as number) ?? 32;
+    const isBold = (data.bold as boolean | undefined) ?? false;
+    const isItalic = (data.italic as boolean | undefined) ?? false;
+    if (isSystemFont(fontFamily)) return;
+    const fontSpec = buildFontSpec(fontFamily, fontSize, isBold ? 700 : 400, isItalic);
+    if (!fontSpec) return;
+
+    let cancelled = false;
+    document.fonts
+      .load(fontSpec)
+      .then(() => {
+        if (cancelled) return;
+        const node = localRef.current;
+        if (!node || node.getClassName() !== 'Text') return;
+        const textNode = node as Konva.Text;
+        textNode.fontFamily(textNode.fontFamily());
+        textNode.text(textNode.text());
+        textNode.getLayer()?.batchDraw();
+      })
+      .catch(() => {
+        // Ignore font load errors.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [element.type, element.dataJson]);
+
   const commonProps = {
     x: element.x,
     y: element.y,
@@ -90,8 +130,22 @@ export default function ElementRenderer({
       event.cancelBubble = true;
       onSelect();
     },
+    onDragStart: (event: Konva.KonvaEventObject<DragEvent>) => {
+      event.target.setAttr('skipGridSnap', false);
+      onDragStart?.(element.id);
+    },
+    onDragMove: (event: Konva.KonvaEventObject<DragEvent>) => {
+      onDragMove?.({
+        id: element.id,
+        node: event.target,
+        width: element.width,
+        height: element.height
+      });
+    },
     onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => {
-      onCommit({ x: event.target.x(), y: event.target.y() });
+      const skipGridSnap = Boolean(event.target.getAttr('skipGridSnap'));
+      onCommit({ x: event.target.x(), y: event.target.y() }, { skipGridSnap });
+      onDragEnd?.(element.id);
     },
     onTransformEnd: (event: Konva.KonvaEventObject<Event>) => {
       const node = event.target;

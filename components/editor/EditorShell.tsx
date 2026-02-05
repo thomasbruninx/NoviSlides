@@ -62,6 +62,8 @@ export default function EditorShell() {
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [showGuides, setShowGuides] = useState(true);
+  const [magneticGuides, setMagneticGuides] = useState(true);
   const gridSize = 25;
   const [showSlideshows, setShowSlideshows] = useState(true);
   const [showScreens, setShowScreens] = useState(false);
@@ -676,8 +678,12 @@ export default function EditorShell() {
     queueElementSave(selectedElement.id, sanitized);
   };
 
-  const handleElementCommit = (id: string, attrs: Partial<SlideElementDto>) => {
-    if (snapToGrid) {
+  const handleElementCommit = (
+    id: string,
+    attrs: Partial<SlideElementDto>,
+    options?: { skipGridSnap?: boolean }
+  ) => {
+    if (snapToGrid && !options?.skipGridSnap) {
       const snap = (value?: number) =>
         typeof value === 'number' ? Math.round(value / gridSize) * gridSize : value;
       attrs = {
@@ -1063,9 +1069,19 @@ export default function EditorShell() {
               </Group>
               <Group>
                 <Switch
-                  label="Snap to 25px grid"
+                  label="Snap to grid"
                   checked={snapToGrid}
                   onChange={(event) => setSnapToGrid(event.currentTarget.checked)}
+                />
+                <Switch
+                  label="Show guides"
+                  checked={showGuides}
+                  onChange={(event) => setShowGuides(event.currentTarget.checked)}
+                />
+                <Switch
+                  label="Magnetic guides"
+                  checked={magneticGuides}
+                  onChange={(event) => setMagneticGuides(event.currentTarget.checked)}
                 />
                 <Tooltip
                   label="Saves pending changes, or refreshes viewers if none are pending."
@@ -1102,6 +1118,8 @@ export default function EditorShell() {
                   onElementCommit={handleElementCommit}
                   showGrid={snapToGrid}
                   gridSize={gridSize}
+                  showGuides={showGuides}
+                  magneticGuides={magneticGuides}
                 />
               ) : (
                 <Paper p="xl" radius="md" withBorder>
