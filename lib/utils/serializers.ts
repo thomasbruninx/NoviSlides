@@ -26,8 +26,29 @@ export function toScreenDto(screen: Screen): ScreenDto {
 }
 
 export function toSlideDto(slide: Slide): SlideDto {
+  const backgroundImageSize =
+    slide.backgroundImageSize && ['cover', 'contain', 'center'].includes(slide.backgroundImageSize)
+      ? (slide.backgroundImageSize as SlideDto['backgroundImageSize'])
+      : null;
+  const backgroundImagePosition =
+    slide.backgroundImagePosition &&
+    [
+      'top-left',
+      'top-center',
+      'top-right',
+      'center-left',
+      'center',
+      'center-right',
+      'bottom-left',
+      'bottom-center',
+      'bottom-right'
+    ].includes(slide.backgroundImagePosition)
+      ? (slide.backgroundImagePosition as SlideDto['backgroundImagePosition'])
+      : null;
   return {
     ...slide,
+    backgroundImageSize,
+    backgroundImagePosition,
     createdAt: slide.createdAt.toISOString(),
     updatedAt: slide.updatedAt.toISOString()
   };

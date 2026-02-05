@@ -24,6 +24,9 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
   ContentCopy as ContentCopyIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
+  DragPan as DragPanIcon,
   GridGoldenratio as GridGoldenratioIcon,
   Settings as SettingsIcon
 } from '@nine-thirty-five/material-symbols-react/outlined';
@@ -78,6 +81,8 @@ export default function EditorShell() {
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [showIconLibrary, setShowIconLibrary] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [panMode, setPanMode] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const [mediaIntent, setMediaIntent] = useState<
     | { type: 'add-element' }
     | { type: 'slide-background' }
@@ -450,10 +455,17 @@ export default function EditorShell() {
     try {
       const stored = localStorage.getItem(CLIPBOARD_KEY);
       if (!stored) return null;
-      const parsed = JSON.parse(stored) as NonNullable<typeof clipboardRef.current>;
-      if (!parsed || !parsed.type) return null;
-      clipboardRef.current = parsed;
-      return parsed;
+      const parsed = JSON.parse(stored) as unknown;
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        !('type' in parsed) ||
+        typeof (parsed as { type?: unknown }).type !== 'string'
+      ) {
+        return null;
+      }
+      clipboardRef.current = parsed as NonNullable<typeof clipboardRef.current>;
+      return clipboardRef.current;
     } catch {
       return null;
     }
@@ -970,7 +982,7 @@ export default function EditorShell() {
     return true;
   };
 
-  const handleIconSelected = async (payload: { name: string; style: string }) => {
+  const handleIconSelected = async (payload: { name: string; style: 'filled' | 'outlined' | 'round' | 'sharp' | 'two-tone' }) => {
     if (!iconIntent) return;
     if (iconIntent.type === 'element-symbol') {
       const targetElement = selectedSlide?.elements?.find((item) => item.id === iconIntent.elementId) ?? null;
@@ -1287,6 +1299,38 @@ export default function EditorShell() {
                     </Box>
                   </Menu.Dropdown>
                 </Menu>
+                <Tooltip label={panMode ? 'Pan mode (on)' : 'Pan mode (off)'} withArrow>
+                  <Button
+                    size="xs"
+                    variant={panMode ? 'filled' : 'light'}
+                    onClick={() => setPanMode((value) => !value)}
+                  >
+                    <DragPanIcon />
+                  </Button>
+                </Tooltip>
+                <Group gap={4}>
+                  <Tooltip label="Zoom out" withArrow>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      onClick={() => setZoom((value) => Math.max(0.3, Number((value / 1.1).toFixed(2))))}
+                    >
+                      <ZoomOutIcon />
+                    </Button>
+                  </Tooltip>
+                  <Button size="xs" variant="light" onClick={() => setZoom(1)}>
+                    {Math.round(zoom * 100)}%
+                  </Button>
+                  <Tooltip label="Zoom in" withArrow>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      onClick={() => setZoom((value) => Math.min(3, Number((value * 1.1).toFixed(2))))}
+                    >
+                      <ZoomInIcon />
+                    </Button>
+                  </Tooltip>
+                </Group>
                 <Button size="xs" variant="light" onClick={() => setShowSettings(true)}>
                   <SettingsIcon />
                 </Button>
@@ -1323,6 +1367,9 @@ export default function EditorShell() {
                   selectedElementId={selectedElementId}
                   onSelectElement={setSelectedElementId}
                   onElementCommit={handleElementCommit}
+                  zoom={zoom}
+                  onZoomChange={setZoom}
+                  panMode={panMode}
                   showGrid={snapToGrid}
                   gridSize={gridSize}
                   showGuides={showGuides}

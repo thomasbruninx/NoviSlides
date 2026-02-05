@@ -17,7 +17,10 @@ export default function ElementRenderer({
   onCommit,
   onDragStart,
   onDragMove,
-  onDragEnd
+  onDragEnd,
+  draggable = true,
+  canSelect = true,
+  onMiddleMouseDown
 }: {
   element: SlideElementDto;
   isSelected: boolean;
@@ -27,6 +30,9 @@ export default function ElementRenderer({
   onDragStart?: (id: string) => void;
   onDragMove?: (payload: { id: string; node: Konva.Node; width: number; height: number }) => void;
   onDragEnd?: (id: string) => void;
+  draggable?: boolean;
+  canSelect?: boolean;
+  onMiddleMouseDown?: (payload: { clientX: number; clientY: number }) => void;
 }) {
   const localRef = useRef<Konva.Node | null>(null);
   const rawPath = element.type === 'image' ? ((element.dataJson as Record<string, unknown>).path as string) : '';
@@ -136,16 +142,30 @@ export default function ElementRenderer({
     height: element.height,
     rotation: element.rotation,
     opacity: element.opacity,
-    draggable: true,
+    draggable,
     onClick: (event: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!canSelect) return;
       event.cancelBubble = true;
       onSelect();
     },
+    onMouseDown: (event: Konva.KonvaEventObject<MouseEvent>) => {
+      const evt = event.evt;
+      if (evt.button === 1) {
+        event.cancelBubble = true;
+        onMiddleMouseDown?.({ clientX: evt.clientX, clientY: evt.clientY });
+      }
+    },
     onTap: (event: Konva.KonvaEventObject<TouchEvent>) => {
+      if (!canSelect) return;
       event.cancelBubble = true;
       onSelect();
     },
     onDragStart: (event: Konva.KonvaEventObject<DragEvent>) => {
+      const evt = event.evt as MouseEvent;
+      if (typeof evt.button === 'number' && evt.button === 1) {
+        event.target.stopDrag();
+        return;
+      }
       event.target.setAttr('skipGridSnap', false);
       onDragStart?.(element.id);
     },

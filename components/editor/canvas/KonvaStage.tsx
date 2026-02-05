@@ -17,6 +17,9 @@ export default function KonvaStage({
   selectedElementId,
   onSelectElement,
   onElementCommit,
+  zoom = 1,
+  onZoomChange,
+  panMode = false,
   showGrid = false,
   gridSize = 25,
   showGuides = true,
@@ -31,17 +34,26 @@ export default function KonvaStage({
     attrs: Partial<SlideElementDto>,
     options?: { skipGridSnap?: boolean }
   ) => void;
+  zoom?: number;
+  onZoomChange?: (value: number) => void;
+  panMode?: boolean;
   showGrid?: boolean;
   gridSize?: number;
   showGuides?: boolean;
   magneticGuides?: boolean;
 }) {
+  const STAGE_PADDING = 80;
   const { ref, width: containerWidth, height: containerHeight } = useElementSize();
+  const stageRef = useRef<Konva.Stage>(null);
   const elementRefs = useRef<Record<string, Konva.Node>>({});
   const transformerRef = useRef<Konva.Transformer>(null);
   const [guides, setGuides] = useState<Array<{ orientation: 'vertical' | 'horizontal'; position: number }>>([]);
   const GUIDE_VISIBLE_DISTANCE = 50;
   const GUIDE_SNAP_DISTANCE = 15;
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const lastPanPosRef = useRef<{ x: number; y: number } | null>(null);
+  const [isMiddlePanning, setIsMiddlePanning] = useState(false);
 
   const [backgroundImage] = useImage(slide?.backgroundImagePath ?? '');
 
@@ -93,27 +105,128 @@ export default function KonvaStage({
     slide?.backgroundImageSize
   ]);
 
+  const stageLogicalWidth = screen.width + STAGE_PADDING * 2;
+  const stageLogicalHeight = screen.height + STAGE_PADDING * 2;
+
   const lastScaleRef = useRef(1);
-  const scale = useMemo(() => {
+  const baseScale = useMemo(() => {
     if (!containerWidth || !containerHeight) {
       return lastScaleRef.current;
     }
-    const nextScale = Math.min(containerWidth / screen.width, containerHeight / screen.height);
+    const nextScale = Math.min(
+      containerWidth / stageLogicalWidth,
+      containerHeight / stageLogicalHeight
+    );
     lastScaleRef.current = nextScale;
     return nextScale;
-  }, [containerWidth, containerHeight, screen.width, screen.height]);
+  }, [containerWidth, containerHeight, stageLogicalWidth, stageLogicalHeight]);
+  const scale = baseScale * zoom;
 
   const selectedNode = selectedElementId ? elementRefs.current[selectedElementId] : null;
 
+  const beginPan = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const evt = event.evt as MouseEvent;
+    isPanningRef.current = true;
+    lastPanPosRef.current = { x: evt.clientX, y: evt.clientY };
+    const container = stageRef.current?.container();
+    if (container) {
+      container.style.cursor = 'grabbing';
+    }
+  };
+
+  const endPan = () => {
+    isPanningRef.current = false;
+    lastPanPosRef.current = null;
+    const container = stageRef.current?.container();
+    if (container) {
+      container.style.cursor = panMode ? 'grab' : 'default';
+    }
+    setIsMiddlePanning(false);
+  };
+
+  const beginMiddlePan = useCallback((payload: { clientX: number; clientY: number }) => {
+    const container = stageRef.current?.container();
+    if (!container) return;
+    isPanningRef.current = true;
+    lastPanPosRef.current = { x: payload.clientX, y: payload.clientY };
+    container.style.cursor = 'grabbing';
+    setIsMiddlePanning(true);
+  }, []);
+
   const handleStagePointerDown = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    event.evt.preventDefault();
+    const evt = event.evt as MouseEvent;
+    const isMiddle = evt.button === 1;
+    const isPrimaryPan = panMode && evt.button === 0;
+    if (isMiddle || isPrimaryPan) {
+      evt.preventDefault();
+      if (isMiddle) {
+        setIsMiddlePanning(true);
+      }
+      beginPan(event);
+      return;
+    }
     if (event.target === event.target.getStage()) {
       onSelectElement(null);
     }
   };
 
-  const stageWidth = screen.width * scale;
-  const stageHeight = screen.height * scale;
+  const handleStagePointerMove = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    if (!isPanningRef.current) return;
+    const evt = event.evt as MouseEvent;
+    if (!lastPanPosRef.current) {
+      lastPanPosRef.current = { x: evt.clientX, y: evt.clientY };
+      return;
+    }
+    const dx = evt.clientX - lastPanPosRef.current.x;
+    const dy = evt.clientY - lastPanPosRef.current.y;
+    lastPanPosRef.current = { x: evt.clientX, y: evt.clientY };
+    setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+  };
+
+  const handleStagePointerUp = () => {
+    if (isPanningRef.current) {
+      endPan();
+    }
+  };
+
+  const handleWheel = (event: Konva.KonvaEventObject<WheelEvent>) => {
+    if (!onZoomChange) return;
+    event.evt.preventDefault();
+    const direction = event.evt.deltaY > 0 ? -1 : 1;
+    const factor = direction > 0 ? 1.1 : 0.9;
+    const next = Math.min(3, Math.max(0.3, zoom * factor));
+    onZoomChange(next);
+  };
+
+  const stageWidth = stageLogicalWidth * scale;
+  const stageHeight = stageLogicalHeight * scale;
+  const contentOffset = { x: STAGE_PADDING, y: STAGE_PADDING };
+
+  useEffect(() => {
+    const container = stageRef.current?.container();
+    if (container) {
+      container.style.cursor = panMode ? 'grab' : 'default';
+    }
+  }, [panMode]);
+
+  useEffect(() => {
+    setPanOffset({ x: 0, y: 0 });
+  }, [slide?.id, screen.id]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const handler = (event: Konva.KonvaEventObject<DragEvent>) => {
+      const evt = event.evt as MouseEvent;
+      if (typeof evt.button === 'number' && evt.button === 1) {
+        event.target.stopDrag();
+      }
+    };
+    stage.on('dragstart', handler);
+    return () => {
+      stage.off('dragstart', handler);
+    };
+  }, []);
 
   const clearGuides = useCallback(() => {
     setGuides([]);
@@ -262,7 +375,9 @@ export default function KonvaStage({
 
   const refreshLabelMetrics = useCallback(() => {
     Object.values(elementRefs.current).forEach((node) => {
-      if (!node || (typeof node.isDestroyed === 'function' && node.isDestroyed())) return;
+      if (!node) return;
+      const maybeNode = node as Konva.Node & { isDestroyed?: () => boolean };
+      if (typeof maybeNode.isDestroyed === 'function' && maybeNode.isDestroyed()) return;
       if (node.getClassName() !== 'Text') return;
       const textNode = node as Konva.Text;
       if (typeof textNode.clearCache === 'function') {
@@ -396,20 +511,35 @@ export default function KonvaStage({
           top: '50%',
           width: stageWidth,
           height: stageHeight,
-          transform: 'translate(-50%, -50%)'
+          transform: `translate(-50%, -50%) translate(${panOffset.x}px, ${panOffset.y}px)`
         }}
       >
         <Stage
+          ref={stageRef}
           width={stageWidth}
           height={stageHeight}
           scaleX={scale}
           scaleY={scale}
           onMouseDown={handleStagePointerDown}
+          onMouseMove={handleStagePointerMove}
+          onMouseUp={handleStagePointerUp}
+          onMouseLeave={handleStagePointerUp}
           onTouchStart={handleStagePointerDown}
+          onTouchMove={handleStagePointerMove}
+          onTouchEnd={handleStagePointerUp}
+          onWheel={handleWheel}
           tabIndex={-1}
           style={{ outline: 'none' }}
         >
-          <Layer listening={false}>
+          <Layer
+            listening={false}
+            x={contentOffset.x}
+            y={contentOffset.y}
+            clipX={0}
+            clipY={0}
+            clipWidth={screen.width}
+            clipHeight={screen.height}
+          >
             <Rect width={screen.width} height={screen.height} fill={slide?.backgroundColor ?? '#0b0f18'} />
             {backgroundImage && backgroundLayout ? (
               <KonvaImage
@@ -422,7 +552,15 @@ export default function KonvaStage({
             ) : null}
           </Layer>
           {showGrid ? (
-            <Layer listening={false}>
+            <Layer
+              listening={false}
+              x={contentOffset.x}
+              y={contentOffset.y}
+              clipX={0}
+              clipY={0}
+              clipWidth={screen.width}
+              clipHeight={screen.height}
+            >
               {Array.from({ length: Math.floor(screen.width / gridSize) - 1 }, (_, index) => {
                 const x = (index + 1) * gridSize;
                 return (
@@ -447,7 +585,14 @@ export default function KonvaStage({
               })}
             </Layer>
           ) : null}
-          <Layer>
+          <Layer
+            x={contentOffset.x}
+            y={contentOffset.y}
+            clipX={0}
+            clipY={0}
+            clipWidth={screen.width}
+            clipHeight={screen.height}
+          >
             {(slide?.elements ?? [])
               .slice()
               .sort((a, b) => a.zIndex - b.zIndex)
@@ -471,12 +616,25 @@ export default function KonvaStage({
                   onDragStart={handleElementDragStart}
                   onDragMove={handleElementDragMove}
                   onDragEnd={handleElementDragEnd}
+                  draggable={!panMode && !isMiddlePanning}
+                  canSelect={!panMode && !isMiddlePanning}
+                  onMiddleMouseDown={beginMiddlePan}
                 />
               ))}
+          </Layer>
+          <Layer x={contentOffset.x} y={contentOffset.y}>
             <Transformers transformerRef={transformerRef} selectedNode={selectedNode ?? null} />
           </Layer>
           {showGuides && guides.length ? (
-            <Layer listening={false}>
+            <Layer
+              listening={false}
+              x={contentOffset.x}
+              y={contentOffset.y}
+              clipX={0}
+              clipY={0}
+              clipWidth={screen.width}
+              clipHeight={screen.height}
+            >
               {guides.map((guide, index) => (
                 <Line
                   key={`${guide.orientation}-${guide.position}-${index}`}

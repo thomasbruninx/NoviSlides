@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -59,7 +59,7 @@ export default function IconLibraryModal({
     []
   );
 
-  const fetchPage = async (nextPage: number, replace = false) => {
+  const fetchPage = useCallback(async (nextPage: number, replace = false) => {
     setLoading(true);
     try {
       const result = await apiFetch<IconResult>(
@@ -76,14 +76,14 @@ export default function IconLibraryModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedQuery, style]);
 
   useEffect(() => {
     if (!opened) return;
     setItems([]);
     setPage(1);
     void fetchPage(1, true);
-  }, [debouncedQuery, style, opened]);
+  }, [debouncedQuery, style, opened, fetchPage]);
 
   const canLoadMore = items.length < total;
 

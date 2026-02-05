@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Reveal from 'reveal.js';
 import type { SlideDto, ScreenDto, SlideshowDto } from '@/lib/types';
 import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
 import SlideSection from './SlideSection';
+import { buildFontSpec, isSystemFont, normalizeFont } from '@/lib/utils/fonts';
+import { resolveMediaPath } from '@/lib/utils/media';
+import { getIconUrl } from '@/lib/utils/icons';
 
 export default function RevealDeck({
   slideshow,
@@ -19,6 +22,10 @@ export default function RevealDeck({
   const revealRef = useRef<InstanceType<typeof Reveal> | null>(null);
   const isReadyRef = useRef(false);
   const loopResetSlideRef = useRef<HTMLElement | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
+  const [isRevealReady, setIsRevealReady] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
 
   const labelFonts = useMemo(
     () =>
@@ -31,6 +38,124 @@ export default function RevealDeck({
   );
 
   useGoogleFonts(labelFonts);
+
+  useEffect(() => {
+    if (hasLoadedOnceRef.current) return;
+    if (!slides.length) return;
+    let cancelled = false;
+
+    const loadImage = (url: string) =>
+      new Promise<void>((resolve) => {
+        if (!url) return resolve();
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = url;
+      });
+
+    const loadVideo = (url: string) =>
+      new Promise<void>((resolve) => {
+        if (!url) return resolve();
+        const video = document.createElement('video');
+        const cleanup = () => {
+          video.removeEventListener('loadedmetadata', done);
+          video.removeEventListener('error', done);
+          video.src = '';
+        };
+        const done = () => {
+          cleanup();
+          resolve();
+        };
+        video.preload = 'metadata';
+        video.addEventListener('loadedmetadata', done);
+        video.addEventListener('error', done);
+        video.src = url;
+      });
+
+    const preload = async () => {
+      setIsLoading(true);
+      setLoadProgress({ loaded: 0, total: 0 });
+      const imageUrls = new Set<string>();
+      const videoUrls = new Set<string>();
+      const fontSpecs = new Set<string>();
+
+      slides.forEach((slide) => {
+        const background = slide.backgroundImagePath
+          ? resolveMediaPath(slide.backgroundImagePath)
+          : '';
+        if (background) {
+          imageUrls.add(background);
+        }
+        (slide.elements ?? []).forEach((element) => {
+          const data = element.dataJson as Record<string, unknown>;
+          if (element.type === 'image') {
+            const path = resolveMediaPath((data.path as string | undefined) ?? '');
+            if (path) imageUrls.add(path);
+          }
+          if (element.type === 'video') {
+            const path = resolveMediaPath((data.path as string | undefined) ?? '');
+            if (path) videoUrls.add(path);
+          }
+          if (element.type === 'symbol') {
+            const iconName = (data.iconName as string | undefined) ?? '';
+            if (iconName) {
+              const style = (data.iconStyle as string | undefined) ?? 'filled';
+              const color = (data.color as string | undefined) ?? '#ffffff';
+              imageUrls.add(
+                getIconUrl(style as 'filled' | 'outlined' | 'round' | 'sharp' | 'two-tone', iconName, color)
+              );
+            }
+          }
+          if (element.type === 'label') {
+            const family = (data.fontFamily as string | undefined) ?? '';
+            const primary = normalizeFont(family);
+            if (primary && !isSystemFont(primary)) {
+              const spec = buildFontSpec(primary, 16, 400, false);
+              if (spec) fontSpecs.add(spec);
+            }
+          }
+        });
+      });
+
+      const imageList = Array.from(imageUrls);
+      const videoList = Array.from(videoUrls);
+      const fontList = Array.from(fontSpecs);
+      const total = imageList.length + videoList.length + fontList.length;
+      setLoadProgress({ loaded: 0, total });
+
+      const bumpLoaded = () => {
+        setLoadProgress((current) => ({
+          loaded: Math.min(current.loaded + 1, current.total),
+          total: current.total
+        }));
+      };
+
+      const imagePromises = imageList.map((url) =>
+        loadImage(url).finally(() => bumpLoaded())
+      );
+      const videoPromises = videoList.map((url) =>
+        loadVideo(url).finally(() => bumpLoaded())
+      );
+      const fontPromises = document.fonts?.load
+        ? fontList.map((spec) =>
+            document.fonts.load(spec).catch(() => []).finally(() => bumpLoaded())
+          )
+        : [];
+
+      await Promise.allSettled([...imagePromises, ...videoPromises, ...fontPromises]);
+      if (cancelled) return;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (cancelled) return;
+      hasLoadedOnceRef.current = true;
+      setIsLoading(false);
+    };
+
+    void preload();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slides]);
   const latestConfigRef = useRef({
     width: screen.width,
     height: screen.height,
@@ -61,6 +186,7 @@ export default function RevealDeck({
   ]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!deckRef.current) return;
 
     if (!revealRef.current) {
@@ -84,6 +210,7 @@ export default function RevealDeck({
         .initialize()
         .then(() => {
           isReadyRef.current = true;
+          setIsRevealReady(true);
           const config = latestConfigRef.current;
           deck.configure({
             width: config.width,
@@ -122,7 +249,8 @@ export default function RevealDeck({
     slideshow.defaultAutoSlideMs,
     slideshow.loop,
     slideshow.revealTransition,
-    slideshow.autoSlideStoppable
+    slideshow.autoSlideStoppable,
+    isLoading
   ]);
 
   useEffect(() => {
@@ -307,6 +435,10 @@ export default function RevealDeck({
     };
   }, []);
 
+  const showLoading = isLoading || !isRevealReady;
+  const progressRatio =
+    loadProgress.total > 0 ? Math.min(1, loadProgress.loaded / loadProgress.total) : 0;
+
   return (
     <div 
       className="viewer-root" 
@@ -321,6 +453,25 @@ export default function RevealDeck({
           height: screen.height
         }}
       >
+        {showLoading ? (
+          <div className="viewer-loading">
+            <div className="viewer-loading-card">
+              <div className="viewer-loading-title">Loading slideshow…</div>
+              <div className="viewer-loading-sub">
+                Preparing media and fonts
+                {loadProgress.total > 0
+                  ? ` • ${Math.min(loadProgress.loaded, loadProgress.total)}/${loadProgress.total}`
+                  : ''}
+              </div>
+              <div className="viewer-loading-bar">
+                <div
+                  className="viewer-loading-bar-fill"
+                  style={{ width: `${progressRatio * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div ref={deckRef} className="reveal">
           <div className="slides">
             {slides.map((slide) => (
