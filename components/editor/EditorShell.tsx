@@ -23,6 +23,7 @@ import {
   FlipToBack as FlipToBackIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
+  GridGoldenratio as GridGoldenratioIcon,
 } from '@nine-thirty-five/material-symbols-react/outlined';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -1068,21 +1069,34 @@ export default function EditorShell() {
                 
               </Group>
               <Group>
-                <Switch
-                  label="Snap to grid"
-                  checked={snapToGrid}
-                  onChange={(event) => setSnapToGrid(event.currentTarget.checked)}
-                />
-                <Switch
-                  label="Show guides"
-                  checked={showGuides}
-                  onChange={(event) => setShowGuides(event.currentTarget.checked)}
-                />
-                <Switch
-                  label="Magnetic guides"
-                  checked={magneticGuides}
-                  onChange={(event) => setMagneticGuides(event.currentTarget.checked)}
-                />
+                <Menu position="bottom-end" shadow="md" closeOnItemClick={false}>
+                  <Menu.Target>
+                    <Button size="xs" variant="light">
+                      <GridGoldenratioIcon />
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Box px="sm" py="xs">
+                      <Stack gap="xs">
+                        <Switch
+                          label="Snap to grid"
+                          checked={snapToGrid}
+                          onChange={(event) => setSnapToGrid(event.currentTarget.checked)}
+                        />
+                        <Switch
+                          label="Show guides"
+                          checked={showGuides}
+                          onChange={(event) => setShowGuides(event.currentTarget.checked)}
+                        />
+                        <Switch
+                          label="Magnetic guides"
+                          checked={magneticGuides}
+                          onChange={(event) => setMagneticGuides(event.currentTarget.checked)}
+                        />
+                      </Stack>
+                    </Box>
+                  </Menu.Dropdown>
+                </Menu>
                 <Tooltip
                   label="Saves pending changes, or refreshes viewers if none are pending."
                   withArrow
