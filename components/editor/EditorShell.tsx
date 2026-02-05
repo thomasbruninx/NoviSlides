@@ -24,6 +24,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
   GridGoldenratio as GridGoldenratioIcon,
+  Settings as SettingsIcon
 } from '@nine-thirty-five/material-symbols-react/outlined';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,6 +39,7 @@ import SlidePropsPanel from './panels/SlidePropsPanel';
 import ElementPropsPanel from './panels/ElementPropsPanel';
 import SlideshowPropsPanel from './panels/SlideshowPropsPanel';
 import MediaLibraryModal from './media/MediaLibraryModal';
+import EditorSettingsModal from './EditorSettingsModal';
 
 const defaultLabelData: SlideElementDto['dataJson'] = {
   text: 'New label',
@@ -70,6 +72,7 @@ export default function EditorShell() {
   const [showScreens, setShowScreens] = useState(false);
   const [showSlides, setShowSlides] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [mediaIntent, setMediaIntent] = useState<
     | { type: 'add-element' }
     | { type: 'slide-background' }
@@ -1097,6 +1100,9 @@ export default function EditorShell() {
                     </Box>
                   </Menu.Dropdown>
                 </Menu>
+                <Button size="xs" variant="light" onClick={() => setShowSettings(true)}>
+                  <SettingsIcon />
+                </Button>
                 <Tooltip
                   label="Saves pending changes, or refreshes viewers if none are pending."
                   withArrow
@@ -1237,6 +1243,7 @@ export default function EditorShell() {
           mediaIntent?.type === 'element-video'
         }
       />
+      <EditorSettingsModal opened={showSettings} onClose={() => setShowSettings(false)} />
     </AppShell>
   );
 }

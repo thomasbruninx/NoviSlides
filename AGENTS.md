@@ -146,6 +146,7 @@ Templates should be:
   - `dragend`
   - `transformend`
 - Use optimistic updates; rollback on failure
+- Editor-wide settings live in a modal component: `components/editor/EditorSettingsModal.tsx`
 
 Avoid:
 - Re-rendering entire canvas on small changes

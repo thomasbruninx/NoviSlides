@@ -5,4 +5,3 @@
 - Add authentication system
 - Upgrade outdated dependencies
 - Add more element types (material icons, etc.)
-- Add guidelines to center or outline elements (maybe also a toggle to make them magnetic)
