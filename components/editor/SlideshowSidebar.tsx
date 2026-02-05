@@ -16,7 +16,6 @@ export default function SlideshowSidebar({
   onUnmount,
   onUnmountAll,
   onDelete,
-  onCreateDemo,
   onExport,
   onImport
 }: {
@@ -30,7 +29,6 @@ export default function SlideshowSidebar({
   onUnmount: (slideshowId: string) => void;
   onUnmountAll: () => void;
   onDelete: (id: string) => void;
-  onCreateDemo: () => void;
   onExport?: (id: string) => void;
   onImport?: () => void;
 }) {
@@ -100,24 +98,19 @@ export default function SlideshowSidebar({
     <Stack gap="sm" p="md">
       <Group justify="space-between">
         <Text fw={700}>Slideshows</Text>
-        <Group gap="xs">
-          <Button size="xs" variant="light" onClick={onImport} disabled={!onImport}>
-            Import
-          </Button>
+      </Group>
+      <Group gap="xs">
           <Button size="xs" onClick={() => setOpened(true)}>
             Create
           </Button>
+          <Button size="xs" variant="light" onClick={onImport} disabled={!onImport}>
+            Import
+          </Button>
+          <Button variant="light" size="xs" color="red" onClick={onUnmountAll} disabled={!hasMountedDisplays}>
+            Unmount All
+          </Button>
         </Group>
-      </Group>
-      <Group grow>
-        <Button variant="light" size="xs" onClick={onCreateDemo}>
-          Create Demo
-        </Button>
-        <Button variant="light" size="xs" color="red" onClick={onUnmountAll} disabled={!hasMountedDisplays}>
-          Unmount All
-        </Button>
-      </Group>
-      <ScrollArea h={280}>
+      <ScrollArea h="100%">
         <Stack gap="xs">
           {slideshows.map((slideshow) => {
             const mountedDisplay = displays.find((display) => display.mountedSlideshowId === slideshow.id);

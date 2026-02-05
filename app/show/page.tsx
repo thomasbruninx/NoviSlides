@@ -1,7 +1,7 @@
 import ViewerEmpty from '@/components/viewer/ViewerEmpty';
 import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
-import { Button, Container, Paper, Stack, Text, Title } from '@mantine/core';
+import { Button, Container, Paper, Stack, Text, Title, Divider } from '@mantine/core';
 
 export default async function ShowPage() {
   const [displays, slideshows] = await Promise.all([
@@ -22,8 +22,8 @@ export default async function ShowPage() {
   if (!displays.length && !slideshows.length) {
     return (
       <ViewerEmpty
-        title="No shows available"
-        description="Create a slideshow and optionally configure displays to expose viewer links."
+        title="No shows/displays available"
+        description="Create a slideshow and configure displays to expose viewer links."
       />
     );
   }
@@ -73,6 +73,10 @@ export default async function ShowPage() {
             ))}
           </>
         ) : null}
+        <Divider my="sm" />
+        <Button component={Link} href="/" size="md">
+            Return
+        </Button>
       </Stack>
     </Container>
   );

@@ -80,9 +80,22 @@ Use the **Create Demo** button in the editor. It creates a starter slideshow wit
 - `GET /show` list available display endpoints and direct slideshow endpoints
 - `GET /show/[slideshowId]` specific slideshow
 - `GET /display/[name]` slideshow mounted to that display
+- `GET /help` renders markdown docs from `docs/*.md` in an accordion
 
-If no slideshows or displays exist, `/show` shows an empty state.
-Activation-based endpoints are removed; mounting to displays is the only assignment workflow.
+### Help docs format
+Markdown docs for `/help` live in `docs/` and must start with a metadata block:
+
+````md
+```meta
+title: My Title
+summary: Short description shown in the accordion.
+icon: help
+order: 10
+```
+````
+
+`order` and `icon` are optional. 
+Docs are sorted by `order` (ascending), then by title alphabetically.
 
 ### Live refresh (SSE)
 Viewer pages subscribe to `GET /api/events?slideshowId=...&screenKey=...` and refresh when slideshow content changes. Display pages also subscribe to mount-change events for their display name and reload when remounted. If SSE fails, the viewer falls back to polling every ~15 seconds.
@@ -120,9 +133,12 @@ Video playback notes:
 ## Project Structure
 - `app/` routes (viewer, editor, API)
 - `components/` viewer/editor UI
+- `docs/` help files (used by help viewer)
 - `lib/` services, repositories, templates, validation, utils
 - `prisma/` schema and migrations
-- `public/uploads/` uploaded assets
+- `public/` assets and uploads
+- `tests/` automated tests
+- `types/` shared types/interfaces
 
 ## Disclaimer on the use of AI
 This project has been developed with the assistance of AI tools (notably GitHub Copilot and ChatGPT Codex) to help speed up development and provide code suggestions. While these tools can be helpful, they may also introduce code that is suboptimal, insecure, or incorrect. Which I experienced firsthand while reviewing and debugging the generated code. I don't blindly trust AI-generated code, and neither should you. Always review, test, and validate any code produced with the help of AI tools.

@@ -209,3 +209,17 @@ export type TemplateSummary = {
   width: number;
   height: number;
 };
+
+export type HelpDocMetadata = {
+  title: string;
+  summary: string;
+  icon?: string | null;
+  order?: number;
+};
+
+export type HelpDoc = {
+  slug: string;
+  fileName: string;
+  metadata: HelpDocMetadata;
+  markdown: string;
+};

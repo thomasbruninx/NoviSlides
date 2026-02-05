@@ -2,5 +2,5 @@
 - "Plug-in" system for custom elements
 - Add authentication system
 - Upgrade outdated dependencies
-- Add "interactive" help view
+- Add help content
 - Dockerized deployment

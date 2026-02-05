@@ -204,16 +204,6 @@ export default function EditorShell() {
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
-  const createDemoMutation = useMutation({
-    mutationFn: () => apiFetch<SlideshowDto>('/api/slideshows/demo', { method: 'POST' }),
-    onSuccess: (slideshow) => {
-      queryClient.invalidateQueries({ queryKey: ['slideshows'] });
-      setSelectedSlideshowId(slideshow.id);
-      notifications.show({ color: 'green', message: 'Demo slideshow created' });
-    },
-    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
-  });
-
   const mountMutation = useMutation({
     mutationFn: ({ slideshowId, displayId }: { slideshowId: string; displayId: string }) =>
       apiFetch<DisplayDto>(`/api/slideshows/${slideshowId}/mount`, {
@@ -1172,7 +1162,7 @@ export default function EditorShell() {
           onClose={() => setShowSlideshows(false)}
           title="Slideshows"
           position="left"
-          size={320}
+          size={400}
           overlayProps={{ opacity: 0.35, blur: 1 }}
         >
           <SlideshowSidebar
@@ -1189,7 +1179,6 @@ export default function EditorShell() {
             onUnmount={(slideshowId) => unmountMutation.mutate(slideshowId)}
             onUnmountAll={() => unmountAllMutation.mutate()}
             onDelete={(id) => deleteSlideshowMutation.mutate(id)}
-            onCreateDemo={() => createDemoMutation.mutate()}
             onExport={handleExportSlideshow}
             onImport={handleImportTrigger}
           />
@@ -1200,7 +1189,7 @@ export default function EditorShell() {
           onClose={() => setShowSlides(false)}
           title="Slides"
           position="left"
-          size={300}
+          size={400}
           overlayProps={{ opacity: 0.35, blur: 1 }}
         >
           <SlidesSidebar

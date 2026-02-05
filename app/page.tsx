@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Container, Group, Stack, Text, Title, Button } from '@mantine/core';
+import { Container, Group, Stack, Text, Title, Button, Divider } from '@mantine/core';
 
 export default function HomePage() {
   return (
@@ -24,6 +24,10 @@ export default function HomePage() {
             View Help
           </Button>
         </Group>
+        <Divider my="sm"/>
+        <Text c="dimmed">
+          Copyright &copy; 2026 Thomas Bruninx. All rights reserved.
+        </Text>
       </Stack>
     </Container>
   );

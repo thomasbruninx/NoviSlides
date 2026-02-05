@@ -217,3 +217,14 @@ export const updateDisplaySchema = z.object({
 export const mountSlideshowSchema = z.object({
   displayId: z.string().min(1)
 });
+
+export const helpDocMetadataSchema = z.object({
+  title: z.string().min(1).max(140),
+  summary: z.string().min(1).max(280),
+  icon: z
+    .string()
+    .regex(/^[a-z0-9_]+$/i, 'Icon must be a material symbol name')
+    .optional()
+    .nullable(),
+  order: z.coerce.number().int().min(0).optional()
+});
