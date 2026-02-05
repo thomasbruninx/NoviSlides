@@ -50,6 +50,8 @@ declare module 'reveal.js' {
       };
     }) => void): void;
     getCurrentSlide(): HTMLElement | null;
+    getIndices?(): { h: number; v?: number; f?: number };
+    slide(indexh: number, indexv?: number, indexf?: number): void;
   }
 
   export default Reveal;

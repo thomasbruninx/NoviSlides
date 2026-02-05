@@ -161,11 +161,11 @@ export type SlideshowExport = {
         y: number;
         width: number;
         height: number;
-        rotation: number;
-        opacity: number;
-        zIndex: number;
-        animation: SlideElementAnimation;
-        dataJson: SlideElementData;
+        rotation?: number;
+        opacity?: number;
+        zIndex?: number;
+        animation?: SlideElementAnimation;
+        dataJson: Record<string, unknown>;
       }>;
     }>;
   }>;

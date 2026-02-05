@@ -2,7 +2,6 @@ import { createReadStream } from 'fs';
 import { stat } from 'fs/promises';
 import path from 'path';
 import { NextResponse } from 'next/server';
-import { Readable } from 'stream';
 
 const uploadRoot = path.join(process.cwd(), 'public', 'uploads');
 
@@ -34,6 +33,36 @@ export async function GET(request: Request, { params }: { params: { path: string
     const range = request.headers.get('range');
     const mimeType = getMimeType(resolved);
 
+    const makeBody = (stream: ReturnType<typeof createReadStream>) =>
+      new ReadableStream({
+        start(controller) {
+          stream.on('data', (chunk) => {
+            try {
+              controller.enqueue(chunk);
+            } catch {
+              // Ignore enqueue after close.
+            }
+          });
+          stream.on('end', () => {
+            try {
+              controller.close();
+            } catch {
+              // Ignore close after cancel.
+            }
+          });
+          stream.on('error', (error) => {
+            try {
+              controller.error(error);
+            } catch {
+              // Ignore errors after close.
+            }
+          });
+        },
+        cancel() {
+          stream.destroy();
+        }
+      });
+
     if (range) {
       const match = range.match(/bytes=(\d+)-(\d+)?/);
       if (!match) {
@@ -46,7 +75,7 @@ export async function GET(request: Request, { params }: { params: { path: string
       }
 
       const stream = createReadStream(resolved, { start, end });
-      const body = Readable.toWeb(stream) as ReadableStream;
+      const body = makeBody(stream);
 
       return new NextResponse(body, {
         status: 206,
@@ -61,7 +90,7 @@ export async function GET(request: Request, { params }: { params: { path: string
     }
 
     const stream = createReadStream(resolved);
-    const body = Readable.toWeb(stream) as ReadableStream;
+    const body = makeBody(stream);
 
     return new NextResponse(body, {
       headers: {

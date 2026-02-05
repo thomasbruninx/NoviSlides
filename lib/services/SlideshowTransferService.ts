@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { SlideshowRepository } from '@/lib/repositories';
-import type { SlideshowExport } from '@/lib/types';
+import type { SlideshowExport, SlideBackgroundImagePosition, SlideBackgroundImageSize } from '@/lib/types';
 
 export class SlideshowTransferService {
   private slideshowRepo = new SlideshowRepository();
@@ -33,8 +33,8 @@ export class SlideshowTransferService {
           autoSlideMsOverride: slide.autoSlideMsOverride,
           backgroundColor: slide.backgroundColor,
           backgroundImagePath: slide.backgroundImagePath,
-          backgroundImageSize: slide.backgroundImageSize,
-          backgroundImagePosition: slide.backgroundImagePosition,
+          backgroundImageSize: slide.backgroundImageSize as SlideBackgroundImageSize | null,
+          backgroundImagePosition: slide.backgroundImagePosition as SlideBackgroundImagePosition | null,
           transitionOverride: slide.transitionOverride,
           elements: slide.elements.map((element) => ({
             type: element.type as SlideshowExport['screens'][number]['slides'][number]['elements'][number]['type'],
