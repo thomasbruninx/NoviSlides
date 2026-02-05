@@ -8,7 +8,7 @@ import Providers from './providers';
 
 export const metadata = {
   title: 'NoviSlides',
-  description: 'Multi-screen slideshow editor and viewer.'
+  description: 'Slideshow editor and viewer.'
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

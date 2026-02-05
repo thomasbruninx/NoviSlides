@@ -44,7 +44,6 @@ import type {
 import { apiFetch } from '@/lib/utils/api';
 import { resolveMediaPath } from '@/lib/utils/media';
 import SlideshowSidebar from './SlideshowSidebar';
-import ScreensSidebar from './ScreensSidebar';
 import SlidesSidebar from './SlidesSidebar';
 import KonvaStage from './canvas/KonvaStage';
 import SlidePropsPanel from './panels/SlidePropsPanel';
@@ -84,7 +83,6 @@ export default function EditorShell() {
   const [magneticGuides, setMagneticGuides] = useState(true);
   const gridSize = 25;
   const [showSlideshows, setShowSlideshows] = useState(true);
-  const [showScreens, setShowScreens] = useState(false);
   const [showSlides, setShowSlides] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [showIconLibrary, setShowIconLibrary] = useState(false);
@@ -135,24 +133,24 @@ export default function EditorShell() {
     queryFn: () => apiFetch<SlideshowDto[]>('/api/slideshows')
   });
 
-  const screensQuery = useQuery({
-    queryKey: ['screens', selectedSlideshowId],
-    queryFn: () => apiFetch<ScreenDto[]>(`/api/slideshows/${selectedSlideshowId}/screens`),
+  const screenQuery = useQuery({
+    queryKey: ['screen', selectedSlideshowId],
+    queryFn: () => apiFetch<ScreenDto>(`/api/slideshows/${selectedSlideshowId}/screen`),
     enabled: !!selectedSlideshowId
   });
 
   const slidesQuery = useQuery({
-    queryKey: ['slides', selectedScreenId],
-    queryFn: () => apiFetch<SlideDto[]>(`/api/screens/${selectedScreenId}/slides`),
-    enabled: !!selectedScreenId
+    queryKey: ['slides', selectedSlideshowId],
+    queryFn: () => apiFetch<SlideDto[]>(`/api/slideshows/${selectedSlideshowId}/slides`),
+    enabled: !!selectedSlideshowId
   });
 
   const slideshows = useMemo(() => slideshowsQuery.data ?? [], [slideshowsQuery.data]);
-  const screens = useMemo(() => screensQuery.data ?? [], [screensQuery.data]);
+  const screen = screenQuery.data ?? null;
   const slides = useMemo(() => slidesQuery.data ?? [], [slidesQuery.data]);
 
   const selectedSlideshow = slideshows.find((item) => item.id === selectedSlideshowId) ?? null;
-  const selectedScreen = screens.find((item) => item.id === selectedScreenId) ?? null;
+  const selectedScreen = screen;
   const selectedSlide = slides.find((item) => item.id === selectedSlideId) ?? null;
   const selectedElement = selectedSlide?.elements?.find((item) => item.id === selectedElementId) ?? null;
 
@@ -163,10 +161,10 @@ export default function EditorShell() {
   }, [selectedSlideshowId, slideshows]);
 
   useEffect(() => {
-    if (!selectedScreenId && screens.length) {
-      setSelectedScreenId(screens[0].id);
+    if (screen?.id && screen.id !== selectedScreenId) {
+      setSelectedScreenId(screen.id);
     }
-  }, [selectedScreenId, screens]);
+  }, [screen?.id, selectedScreenId]);
 
   useEffect(() => {
     if (!selectedSlideId && slides.length) {
@@ -186,7 +184,7 @@ export default function EditorShell() {
   }, [isDirty]);
 
   const createSlideshowMutation = useMutation({
-    mutationFn: (payload: { name: string; templateKey?: string }) =>
+    mutationFn: (payload: { name: string; templateKey?: string; initialScreen: { key: string; width: number; height: number } }) =>
       apiFetch<SlideshowDto>('/api/slideshows', {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -228,38 +226,14 @@ export default function EditorShell() {
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
-  const createScreenMutation = useMutation({
-    mutationFn: (payload: { key: string; width: number; height: number }) =>
-      apiFetch<ScreenDto>(`/api/slideshows/${selectedSlideshowId}/screens`, {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      }),
-    onSuccess: (screen) => {
-      queryClient.invalidateQueries({ queryKey: ['screens', selectedSlideshowId] });
-      setSelectedScreenId(screen.id);
-      notifications.show({ color: 'green', message: 'Screen created' });
-    },
-    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
-  });
-
-  const deleteScreenMutation = useMutation({
-    mutationFn: (id: string) => apiFetch<ScreenDto>(`/api/screens/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['screens', selectedSlideshowId] });
-      setSelectedScreenId(null);
-      notifications.show({ color: 'green', message: 'Screen deleted' });
-    },
-    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
-  });
-
   const createSlideMutation = useMutation({
     mutationFn: () =>
-      apiFetch<SlideDto>(`/api/screens/${selectedScreenId}/slides`, {
+      apiFetch<SlideDto>(`/api/slideshows/${selectedSlideshowId}/slides`, {
         method: 'POST',
         body: JSON.stringify({ title: 'New Slide' })
       }),
     onSuccess: (slide) => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       setSelectedSlideId(slide.id);
       notifications.show({ color: 'green', message: 'Slide created' });
     },
@@ -269,7 +243,7 @@ export default function EditorShell() {
   const deleteSlideMutation = useMutation({
     mutationFn: (id: string) => apiFetch<SlideDto>(`/api/slides/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       setSelectedSlideId(null);
       notifications.show({ color: 'green', message: 'Slide deleted' });
     },
@@ -279,7 +253,7 @@ export default function EditorShell() {
   const duplicateSlideMutation = useMutation({
     mutationFn: (id: string) => apiFetch<SlideDto>(`/api/slides/${id}/duplicate`, { method: 'POST' }),
     onSuccess: (slide) => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       setSelectedSlideId(slide.id);
       notifications.show({ color: 'green', message: 'Slide duplicated' });
     },
@@ -287,19 +261,19 @@ export default function EditorShell() {
   });
   const reorderSlidesMutation = useMutation({
     mutationFn: (orderedIds: string[]) =>
-      apiFetch<SlideDto[]>(`/api/screens/${selectedScreenId}/slides/reorder`, {
+      apiFetch<SlideDto[]>(`/api/slideshows/${selectedSlideshowId}/slides/reorder`, {
         method: 'POST',
         body: JSON.stringify({ orderedIds })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       notifications.show({ color: 'green', message: 'Slides reordered' });
     },
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
   const handleReorderSlides = (orderedIds: string[]) => {
-    queryClient.setQueryData<SlideDto[]>(['slides', selectedScreenId], (current) => {
+    queryClient.setQueryData<SlideDto[]>(['slides', selectedSlideshowId], (current) => {
       if (!current) return current;
       const lookup = new Map(current.map((slide) => [slide.id, slide]));
       return orderedIds
@@ -405,8 +379,8 @@ export default function EditorShell() {
     }
   });
 
-  const refreshScreenMutation = useMutation({
-    mutationFn: (id: string) => apiFetch<{ revision: number }>(`/api/screens/${id}/refresh`, { method: 'POST' }),
+  const refreshSlideshowMutation = useMutation({
+    mutationFn: (id: string) => apiFetch<{ revision: number }>(`/api/slideshows/${id}/refresh`, { method: 'POST' }),
     onError: (error: Error) => {
       notifications.show({ color: 'red', message: error.message });
     }
@@ -418,7 +392,7 @@ export default function EditorShell() {
       pendingElementUpdatesRef.current.delete(id);
       undoStack.current = undoStack.current.filter((entry) => entry.id !== id);
       redoStack.current = redoStack.current.filter((entry) => entry.id !== id);
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       setSelectedElementId(null);
       notifications.show({ color: 'green', message: 'Element deleted' });
     },
@@ -432,7 +406,7 @@ export default function EditorShell() {
         body: JSON.stringify(payload)
       }),
     onSuccess: (element) => {
-      queryClient.invalidateQueries({ queryKey: ['slides', selectedScreenId] });
+      queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       setSelectedElementId(element.id);
     },
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
@@ -471,7 +445,7 @@ export default function EditorShell() {
   };
 
   const updateSlideLocal = (slideId: string, attrs: Partial<SlideDto>) => {
-    queryClient.setQueryData<SlideDto[]>(['slides', selectedScreenId], (current) => {
+    queryClient.setQueryData<SlideDto[]>(['slides', selectedSlideshowId], (current) => {
       if (!current) return current;
       return current.map((slide) => (slide.id === slideId ? { ...slide, ...attrs } : slide));
     });
@@ -487,7 +461,7 @@ export default function EditorShell() {
   };
 
   const updateElementLocal = useCallback((elementId: string, attrs: Partial<SlideElementDto>) => {
-    queryClient.setQueryData<SlideDto[]>(['slides', selectedScreenId], (current) => {
+    queryClient.setQueryData<SlideDto[]>(['slides', selectedSlideshowId], (current) => {
       if (!current) return current;
       return current.map((slide) => {
         if (slide.id !== selectedSlideId) return slide;
@@ -499,7 +473,7 @@ export default function EditorShell() {
         };
       });
     });
-  }, [queryClient, selectedScreenId, selectedSlideId]);
+  }, [queryClient, selectedSlideshowId, selectedSlideId]);
 
   const markDirty = useCallback(() => {
     editVersionRef.current += 1;
@@ -829,13 +803,6 @@ export default function EditorShell() {
     setSelectedElementId(null);
   };
 
-  const handleSelectScreen = (id: string) => {
-    if (isDirty && !window.confirm('You have unsaved changes. Continue?')) return;
-    setSelectedScreenId(id);
-    setSelectedSlideId(null);
-    setSelectedElementId(null);
-  };
-
   const handleSelectSlideshow = (id: string) => {
     if (isDirty && !window.confirm('You have unsaved changes. Continue?')) return;
     setSelectedSlideshowId(id);
@@ -1145,9 +1112,8 @@ export default function EditorShell() {
       void flushPendingSavesRef.current();
       return;
     }
-
-    if (selectedScreenId) {
-      refreshScreenMutation.mutate(selectedScreenId);
+    if (selectedSlideshowId) {
+      refreshSlideshowMutation.mutate(selectedSlideshowId);
     }
   };
 
@@ -1176,27 +1142,6 @@ export default function EditorShell() {
             onCreateDemo={() => createDemoMutation.mutate()}
             onExport={handleExportSlideshow}
             onImport={handleImportTrigger}
-          />
-        </Drawer>
-
-        <Drawer
-          opened={showScreens}
-          onClose={() => setShowScreens(false)}
-          title="Screens"
-          position="left"
-          size={300}
-          overlayProps={{ opacity: 0.35, blur: 1 }}
-        >
-          <ScreensSidebar
-            slideshow={selectedSlideshow}
-            screens={screens}
-            selectedScreenId={selectedScreenId}
-            onSelect={(id) => {
-              handleSelectScreen(id);
-              setShowScreens(false);
-            }}
-            onCreate={(payload) => createScreenMutation.mutate(payload)}
-            onDelete={(id) => deleteScreenMutation.mutate(id)}
           />
         </Drawer>
 
@@ -1241,10 +1186,12 @@ export default function EditorShell() {
                 <Button size="xs" variant="light" onClick={() => setShowSlideshows(true)}>
                   Slideshows
                 </Button>
-                <Button size="xs" variant="light" onClick={() => setShowScreens(true)} disabled={!selectedSlideshowId}>
-                  Screens
-                </Button>
-                <Button size="xs" variant="light" onClick={() => setShowSlides(true)} disabled={!selectedScreenId}>
+                <Button
+                  size="xs"
+                  variant="light"
+                  onClick={() => setShowSlides(true)}
+                  disabled={!selectedSlideshowId || !selectedScreenId}
+                >
                   Slides
                 </Button>
                 <Menu position="bottom-start" shadow="md">
@@ -1401,10 +1348,7 @@ export default function EditorShell() {
                 <Button size="xs" variant="light" onClick={() => setShowSettings(true)}>
                   <SettingsIcon />
                 </Button>
-                <Tooltip
-                  label="Saves pending changes, or refreshes viewers if none are pending."
-                  withArrow
-                >
+                <Tooltip label="Saves pending changes, or refreshes viewers if none are pending." withArrow>
                   <span style={{ display: 'inline-block' }}>
                     <Button
                       size="xs"
@@ -1444,7 +1388,7 @@ export default function EditorShell() {
                 />
               ) : (
                 <Paper p="xl" radius="md" withBorder>
-                  <Text c="dimmed">Select a screen to start editing.</Text>
+                  <Text c="dimmed">Select a slideshow to start editing.</Text>
                 </Paper>
               )}
             </Box>
@@ -1457,7 +1401,6 @@ export default function EditorShell() {
                     <Accordion.Panel>
                       <SlideshowPropsPanel
                         slideshow={selectedSlideshow}
-                        screenKeys={screens.map((screen) => screen.key)}
                         onChange={handleSlideshowChange}
                         showTitle={false}
                       />
@@ -1521,7 +1464,7 @@ export default function EditorShell() {
           </Group>
         </Box>
       </AppShell.Main>
-      {(slideshowsQuery.isLoading || screensQuery.isLoading || slidesQuery.isLoading) && (
+      {(slideshowsQuery.isLoading || screenQuery.isLoading || slidesQuery.isLoading) && (
         <Box style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
           <Loader />
         </Box>

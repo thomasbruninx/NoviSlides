@@ -53,7 +53,8 @@ export class SlideshowService {
     });
 
     if (input.templateKey || !input.initialScreen) {
-      await this.templateService.applyTemplateToSlideshow(slideshow.id, input.templateKey);
+      const sizeOverride = input.initialScreen ? { width: input.initialScreen.width, height: input.initialScreen.height } : undefined;
+      await this.templateService.applyTemplateToSlideshow(slideshow.id, input.templateKey, sizeOverride);
     } else if (input.initialScreen) {
       const screen = await this.screenRepo.create({
         slideshow: { connect: { id: slideshow.id } },

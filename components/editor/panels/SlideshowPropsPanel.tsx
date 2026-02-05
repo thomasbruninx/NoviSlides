@@ -13,12 +13,10 @@ const transitions = [
 
 export default function SlideshowPropsPanel({
   slideshow,
-  screenKeys,
   onChange,
   showTitle = true
 }: {
   slideshow: SlideshowDto | null;
-  screenKeys: string[];
   onChange: (attrs: Partial<SlideshowDto>) => void;
   showTitle?: boolean;
 }) {
@@ -42,12 +40,6 @@ export default function SlideshowPropsPanel({
         data={transitions}
         value={slideshow.revealTransition}
         onChange={(value) => onChange({ revealTransition: value ?? 'slide' })}
-      />
-      <Select
-        label="Default screen key"
-        data={screenKeys.map((key) => ({ value: key, label: key }))}
-        value={slideshow.defaultScreenKey}
-        onChange={(value) => onChange({ defaultScreenKey: value ?? slideshow.defaultScreenKey })}
       />
       <Switch
         label="Loop"

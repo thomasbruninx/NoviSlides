@@ -22,7 +22,7 @@ export default function LiveRevealDeck({
 
   const fetchLatestDeck = useCallback(async () => {
     const response = await fetch(
-      `/api/slideshows/${slideshowId}/screens/${screenKey}/deck`,
+      `/api/slideshows/${slideshowId}/deck`,
       { cache: 'no-store' }
     );
     if (!response.ok) {
@@ -33,7 +33,7 @@ export default function LiveRevealDeck({
       throw new Error(payload.error.message);
     }
     return payload.data;
-  }, [screenKey, slideshowId]);
+  }, [slideshowId]);
 
   const handleDeckUpdate = useCallback((nextDeck: ScreenDeckDto) => {
     setDeck(nextDeck);

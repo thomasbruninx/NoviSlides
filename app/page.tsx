@@ -9,7 +9,7 @@ export default function HomePage() {
       <Stack gap="xl">
         <Title order={1}>NoviSlides</Title>
         <Text c="dimmed">
-          Build, manage, and run multi-screen slideshows with a lightweight editor and a fast viewer.
+          Build, manage, and run slideshows with a lightweight editor and a fast viewer.
         </Text>
         <Group>
           <Button component={Link} href="/edit" size="md">

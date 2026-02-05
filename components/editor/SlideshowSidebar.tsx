@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, Stack, Text, TextInput, Select, ScrollArea, Paper, Badge, Tooltip } from '@mantine/core';
+import { Button, Group, Modal, Stack, Text, TextInput, Select, ScrollArea, Paper, Badge, Tooltip, NumberInput } from '@mantine/core';
 import type { SlideshowDto, TemplateSummary } from '@/lib/types';
 
 export default function SlideshowSidebar({
@@ -20,7 +20,7 @@ export default function SlideshowSidebar({
   selectedId: string | null;
   templates: TemplateSummary[];
   onSelect: (id: string) => void;
-  onCreate: (payload: { name: string; templateKey?: string }) => void;
+  onCreate: (payload: { name: string; templateKey?: string; initialScreen: { key: string; width: number; height: number } }) => void;
   onActivate: (id: string) => void;
   onDelete: (id: string) => void;
   onCreateDemo: () => void;
@@ -29,6 +29,8 @@ export default function SlideshowSidebar({
 }) {
   const [opened, setOpened] = useState(false);
   const [name, setName] = useState('');
+  const [width, setWidth] = useState(1920);
+  const [height, setHeight] = useState(540);
   const defaultTemplate = templates.find((template) => template.isDefault);
   const [templateKey, setTemplateKey] = useState<string | null>(defaultTemplate?.key ?? null);
 
@@ -42,6 +44,14 @@ export default function SlideshowSidebar({
       setTemplateKey(defaultTemplate.key);
     }
   }, [defaultTemplate, templateKey]);
+
+  useEffect(() => {
+    if (!templateKey) return;
+    const template = templates.find((item) => item.key === templateKey);
+    if (!template) return;
+    setWidth(template.width);
+    setHeight(template.height);
+  }, [templateKey, templates]);
 
   return (
     <Stack gap="sm" p="md">
@@ -124,9 +134,31 @@ export default function SlideshowSidebar({
             placeholder="Default template"
             allowDeselect
           />
+          <Group grow>
+            <NumberInput
+              label="Width"
+              value={width}
+              onChange={(val) => setWidth(typeof val === 'number' && !Number.isNaN(val) ? val : 0)}
+              min={1}
+            />
+            <NumberInput
+              label="Height"
+              value={height}
+              onChange={(val) => setHeight(typeof val === 'number' && !Number.isNaN(val) ? val : 0)}
+              min={1}
+            />
+          </Group>
           <Button
             onClick={() => {
-              onCreate({ name: name.trim() || 'Untitled slideshow', templateKey: templateKey ?? undefined });
+              onCreate({
+                name: name.trim() || 'Untitled slideshow',
+                templateKey: templateKey ?? undefined,
+                initialScreen: {
+                  key: 'main',
+                  width,
+                  height
+                }
+              });
               setOpened(false);
               setName('');
             }}

@@ -3,7 +3,7 @@
 A lightweight digital signage content provider, built as a full-stack web application using Next.js, Mantine, Reveal.js, Konva, and SQLite (Prisma).
 
 ## Features
-- Viewer endpoints for active and specific slideshows/screens
+- Viewer endpoints for active and specific slideshows
 - Live refresh for viewer devices via SSE with polling fallback
 - WYSIWYG editor with drag/drop, resize, layers, ...
 - Slides with text, images, videos, shapes, and more
@@ -11,7 +11,8 @@ A lightweight digital signage content provider, built as a full-stack web applic
 - Use Google Fonts in text elements (if free API key provided)
 - Use Google Material Icons in icon elements
 - Media Library with image + video assets
-- Multi-screen decks with locked resolutions (default 1920 x 540)
+- Locked slide resolution (default 1920 x 540)
+- Single-screen playback per slideshow
 - Template system with default starter template
 - SQLite persistence via Prisma
 
@@ -65,22 +66,21 @@ npm run start
 ## Using the Editor
 - Open `http://localhost:3000/edit`
 - Create a slideshow (choose a template or accept the default)
-- Add screens, slides, and elements
+- Add slides and elements
 - Use **Add Media** to upload/select images or videos
 - Activate a slideshow from the left sidebar
 
 ### Create a demo slideshow
-Use the **Create Demo** button in the editor. It creates a multi-screen slideshow with `main` and `side` screens.
+Use the **Create Demo** button in the editor. It creates a starter slideshow with sample content.
 
 ## Viewer Endpoints
-- `GET /show` active slideshow, default screen
-- `GET /show/[slideshowId]` specific slideshow, default screen
-- `GET /show/[slideshowId]/screen/[screenKey]` specific screen
+- `GET /show` active slideshow
+- `GET /show/[slideshowId]` specific slideshow
 
 If no active slideshow exists, the viewer shows a friendly empty state.
 
 ### Live refresh (SSE)
-Viewer pages subscribe to `GET /api/events?slideshowId=...&screenKey=...` and refresh when the screen revision changes. If SSE fails, the viewer falls back to polling every ~15 seconds.
+Viewer pages subscribe to `GET /api/events?slideshowId=...&screenKey=...` and refresh when the slideshow content changes. If SSE fails, the viewer falls back to polling every ~15 seconds.
 
 Note: the current EventHub is in-memory, so live refresh only works within a single server instance.
 
@@ -95,7 +95,7 @@ Included templates:
 If you create a slideshow without choosing a template, the Default Starter is applied automatically.
 
 ## Default Resolution
-New slideshows and screens default to **1920 x 540**. You can override width/height when creating screens.
+New slideshows default to **1920 x 540**.
 
 ## Media Library
 Supported formats:

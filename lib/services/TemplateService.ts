@@ -4,12 +4,17 @@ import { DEFAULT_TEMPLATE_KEY, templates } from '../templates/templates';
 
 export class TemplateService {
   listTemplates() {
-    return templates.map((template) => ({
-      key: template.key,
-      name: template.name,
-      description: template.description,
-      isDefault: template.isDefault
-    }));
+    return templates.map((template) => {
+      const firstScreen = template.build()[0];
+      return {
+        key: template.key,
+        name: template.name,
+        description: template.description,
+        isDefault: template.isDefault,
+        width: firstScreen?.width ?? 1920,
+        height: firstScreen?.height ?? 540
+      };
+    });
   }
 
   getTemplate(key?: string): TemplateDefinition {
@@ -29,8 +34,12 @@ export class TemplateService {
     return this.getTemplate(key).build();
   }
 
-  async applyTemplateToSlideshow(slideshowId: string, key?: string) {
-    const screens = this.buildScreens(key);
+  async applyTemplateToSlideshow(slideshowId: string, key?: string, sizeOverride?: { width: number; height: number }) {
+    const screens = this.buildScreens(key).map((screen) => ({
+      ...screen,
+      width: sizeOverride?.width ?? screen.width,
+      height: sizeOverride?.height ?? screen.height
+    }));
     return prisma.$transaction(async (tx) => {
       for (const screen of screens) {
         const createdScreen = await tx.screen.create({

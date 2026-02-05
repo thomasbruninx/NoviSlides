@@ -197,4 +197,6 @@ export type TemplateSummary = {
   name: string;
   description: string;
   isDefault?: boolean;
+  width: number;
+  height: number;
 };
