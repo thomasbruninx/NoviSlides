@@ -1,5 +1,16 @@
 export type SlideElementType = 'image' | 'label' | 'video' | 'shape';
 export type SlideElementAnimation = 'none' | 'fade' | 'zoom' | 'appear';
+export type SlideBackgroundImageSize = 'cover' | 'contain' | 'center';
+export type SlideBackgroundImagePosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center'
+  | 'center-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
 
 export type SlideElementDataBase = {
   animationDurationMs?: number | null;
@@ -71,6 +82,8 @@ export type SlideDto = {
   autoSlideMsOverride?: number | null;
   backgroundColor?: string | null;
   backgroundImagePath?: string | null;
+  backgroundImageSize?: SlideBackgroundImageSize | null;
+  backgroundImagePosition?: SlideBackgroundImagePosition | null;
   transitionOverride?: string | null;
   createdAt: string;
   updatedAt: string;

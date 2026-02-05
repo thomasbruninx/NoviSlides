@@ -45,6 +45,54 @@ export default function KonvaStage({
 
   const [backgroundImage] = useImage(slide?.backgroundImagePath ?? '');
 
+  const backgroundLayout = useMemo(() => {
+    if (!backgroundImage || !slide?.backgroundImagePath) return null;
+    const imageWidth =
+      (backgroundImage as HTMLImageElement).naturalWidth || backgroundImage.width || screen.width;
+    const imageHeight =
+      (backgroundImage as HTMLImageElement).naturalHeight || backgroundImage.height || screen.height;
+    const size = slide.backgroundImageSize ?? 'cover';
+    const position = slide.backgroundImagePosition ?? 'center';
+
+    let targetWidth = imageWidth;
+    let targetHeight = imageHeight;
+
+    if (size === 'cover' || size === 'contain') {
+      const scale =
+        size === 'cover'
+          ? Math.max(screen.width / imageWidth, screen.height / imageHeight)
+          : Math.min(screen.width / imageWidth, screen.height / imageHeight);
+      targetWidth = imageWidth * scale;
+      targetHeight = imageHeight * scale;
+    }
+
+    const [vertical, horizontal] = position.split('-') as [string | undefined, string | undefined];
+    const alignX = horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center';
+    const alignY = vertical === 'top' ? 'top' : vertical === 'bottom' ? 'bottom' : 'center';
+
+    const x =
+      alignX === 'left'
+        ? 0
+        : alignX === 'right'
+          ? screen.width - targetWidth
+          : (screen.width - targetWidth) / 2;
+    const y =
+      alignY === 'top'
+        ? 0
+        : alignY === 'bottom'
+          ? screen.height - targetHeight
+          : (screen.height - targetHeight) / 2;
+
+    return { x, y, width: targetWidth, height: targetHeight };
+  }, [
+    backgroundImage,
+    screen.height,
+    screen.width,
+    slide?.backgroundImagePath,
+    slide?.backgroundImagePosition,
+    slide?.backgroundImageSize
+  ]);
+
   const lastScaleRef = useRef(1);
   const scale = useMemo(() => {
     if (!containerWidth || !containerHeight) {
@@ -363,8 +411,14 @@ export default function KonvaStage({
         >
           <Layer listening={false}>
             <Rect width={screen.width} height={screen.height} fill={slide?.backgroundColor ?? '#0b0f18'} />
-            {backgroundImage ? (
-              <KonvaImage image={backgroundImage} width={screen.width} height={screen.height} />
+            {backgroundImage && backgroundLayout ? (
+              <KonvaImage
+                image={backgroundImage}
+                x={backgroundLayout.x}
+                y={backgroundLayout.y}
+                width={backgroundLayout.width}
+                height={backgroundLayout.height}
+              />
             ) : null}
           </Layer>
           {showGrid ? (

@@ -13,6 +13,32 @@ const transitions = [
   { value: 'zoom', label: 'Zoom' }
 ];
 
+const backgroundSizeOptions = [
+  { value: 'cover', label: 'Cover' },
+  { value: 'contain', label: 'Contain' },
+  { value: 'center', label: 'Center' }
+];
+
+const backgroundPositionOptions = [
+  { value: 'top-left', label: 'Top left' },
+  { value: 'top-center', label: 'Top center' },
+  { value: 'top-right', label: 'Top right' },
+  { value: 'center-left', label: 'Center left' },
+  { value: 'center', label: 'Center' },
+  { value: 'center-right', label: 'Center right' },
+  { value: 'bottom-left', label: 'Bottom left' },
+  { value: 'bottom-center', label: 'Bottom center' },
+  { value: 'bottom-right', label: 'Bottom right' }
+];
+
+const resolveObjectPosition = (value: string) => {
+  const [vertical, horizontal] = value.split('-') as [string | undefined, string | undefined];
+  const x =
+    horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center';
+  const y = vertical === 'top' ? 'top' : vertical === 'bottom' ? 'bottom' : 'center';
+  return `${x} ${y}`;
+};
+
 export default function SlidePropsPanel({
   slide,
   onChange,
@@ -34,6 +60,12 @@ export default function SlidePropsPanel({
       </Stack>
     );
   }
+
+  const backgroundSize = slide.backgroundImageSize ?? 'cover';
+  const backgroundPosition = slide.backgroundImagePosition ?? 'center';
+  const objectFit = backgroundSize === 'center' ? 'none' : backgroundSize;
+  const objectPosition = resolveObjectPosition(backgroundPosition);
+  const hasBackgroundImage = Boolean(slide.backgroundImagePath);
 
   return (
     <Stack gap="sm">
@@ -66,7 +98,7 @@ export default function SlidePropsPanel({
             <img
               src={resolveMediaPath(slide.backgroundImagePath)}
               alt="Background preview"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit, objectPosition }}
             />
           </Box>
         ) : null}
@@ -84,6 +116,22 @@ export default function SlidePropsPanel({
           ) : null}
         </Group>
       </Stack>
+      <Select
+        label="Background size"
+        data={backgroundSizeOptions}
+        value={backgroundSize}
+        onChange={(value) => onChange({ backgroundImageSize: (value ?? 'cover') as SlideDto['backgroundImageSize'] })}
+        disabled={!hasBackgroundImage}
+      />
+      <Select
+        label="Background position"
+        data={backgroundPositionOptions}
+        value={backgroundPosition}
+        onChange={(value) =>
+          onChange({ backgroundImagePosition: (value ?? 'center') as SlideDto['backgroundImagePosition'] })
+        }
+        disabled={!hasBackgroundImage}
+      />
       <NumberInput
         label="Auto-slide override (ms)"
         value={slide.autoSlideMsOverride ?? undefined}

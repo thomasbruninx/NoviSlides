@@ -52,6 +52,8 @@ export class TemplateService {
               autoSlideMsOverride: slide.autoSlideMsOverride ?? null,
               backgroundColor: slide.backgroundColor ?? null,
               backgroundImagePath: slide.backgroundImagePath ?? null,
+              backgroundImageSize: slide.backgroundImageSize ?? null,
+              backgroundImagePosition: slide.backgroundImagePosition ?? null,
               transitionOverride: slide.transitionOverride ?? null
             }
           });

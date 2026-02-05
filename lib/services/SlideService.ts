@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import type { Prisma } from '@prisma/client';
+import type { SlideBackgroundImagePosition, SlideBackgroundImageSize } from '@/lib/types';
 import { SlideRepository } from '@/lib/repositories';
 import { bumpScreenRevision } from './ScreenRevisionService';
 import { eventHub } from './events';
@@ -18,6 +19,8 @@ export class SlideService {
       autoSlideMsOverride?: number | null;
       backgroundColor?: string | null;
       backgroundImagePath?: string | null;
+      backgroundImageSize?: SlideBackgroundImageSize | null;
+      backgroundImagePosition?: SlideBackgroundImagePosition | null;
       transitionOverride?: string | null;
     }
   ) {
@@ -31,6 +34,8 @@ export class SlideService {
           autoSlideMsOverride: input.autoSlideMsOverride ?? null,
           backgroundColor: input.backgroundColor ?? null,
           backgroundImagePath: input.backgroundImagePath ?? null,
+          backgroundImageSize: input.backgroundImageSize ?? null,
+          backgroundImagePosition: input.backgroundImagePosition ?? null,
           transitionOverride: input.transitionOverride ?? null
         }
       });
@@ -116,6 +121,8 @@ export class SlideService {
           autoSlideMsOverride: original.autoSlideMsOverride,
           backgroundColor: original.backgroundColor,
           backgroundImagePath: original.backgroundImagePath,
+          backgroundImageSize: original.backgroundImageSize,
+          backgroundImagePosition: original.backgroundImagePosition,
           transitionOverride: original.transitionOverride,
           elements: {
             createMany: {

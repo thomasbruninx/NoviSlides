@@ -52,6 +52,21 @@ export const createSlideSchema = z.object({
   autoSlideMsOverride: z.number().int().positive().optional().nullable(),
   backgroundColor: z.string().optional().nullable(),
   backgroundImagePath: z.string().optional().nullable(),
+  backgroundImageSize: z.enum(['cover', 'contain', 'center']).optional().nullable(),
+  backgroundImagePosition: z
+    .enum([
+      'top-left',
+      'top-center',
+      'top-right',
+      'center-left',
+      'center',
+      'center-right',
+      'bottom-left',
+      'bottom-center',
+      'bottom-right'
+    ])
+    .optional()
+    .nullable(),
   transitionOverride: z.string().optional().nullable()
 });
 

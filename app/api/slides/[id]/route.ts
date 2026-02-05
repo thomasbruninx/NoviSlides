@@ -15,6 +15,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         payload.backgroundColor === null ? null : payload.backgroundColor ?? undefined,
       backgroundImagePath:
         payload.backgroundImagePath === null ? null : payload.backgroundImagePath ?? undefined,
+      backgroundImageSize:
+        payload.backgroundImageSize === null ? null : payload.backgroundImageSize ?? undefined,
+      backgroundImagePosition:
+        payload.backgroundImagePosition === null ? null : payload.backgroundImagePosition ?? undefined,
       transitionOverride:
         payload.transitionOverride === null ? null : payload.transitionOverride ?? undefined,
       orderIndex: payload.orderIndex

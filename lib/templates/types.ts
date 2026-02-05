@@ -1,4 +1,9 @@
-import type { SlideElementAnimation, SlideElementType } from '../types';
+import type {
+  SlideBackgroundImagePosition,
+  SlideBackgroundImageSize,
+  SlideElementAnimation,
+  SlideElementType
+} from '../types';
 
 export type TemplateElement = {
   type: SlideElementType;
@@ -18,6 +23,8 @@ export type TemplateSlide = {
   autoSlideMsOverride?: number | null;
   backgroundColor?: string | null;
   backgroundImagePath?: string | null;
+  backgroundImageSize?: SlideBackgroundImageSize | null;
+  backgroundImagePosition?: SlideBackgroundImagePosition | null;
   transitionOverride?: string | null;
   elements: TemplateElement[];
 };

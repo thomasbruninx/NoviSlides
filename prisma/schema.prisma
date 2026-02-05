@@ -49,6 +49,8 @@ model Slide {
   autoSlideMsOverride  Int?
   backgroundColor      String?
   backgroundImagePath  String?
+  backgroundImageSize  String?
+  backgroundImagePosition String?
   transitionOverride   String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt

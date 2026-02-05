@@ -17,6 +17,13 @@ function getFragmentClass(animation?: string) {
   }
 }
 
+const resolveBackgroundPosition = (value: string) => {
+  const [vertical, horizontal] = value.split('-') as [string | undefined, string | undefined];
+  const x = horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center';
+  const y = vertical === 'top' ? 'top' : vertical === 'bottom' ? 'bottom' : 'center';
+  return `${x} ${y}`;
+};
+
 export default function SlideSection({
   slide,
   elements
@@ -25,10 +32,16 @@ export default function SlideSection({
   elements: SlideElementDto[];
 }) {
   const sorted = [...elements].sort((a, b) => a.zIndex - b.zIndex);
+  const backgroundSize = slide.backgroundImageSize ?? 'cover';
+  const backgroundPosition = slide.backgroundImagePosition ?? 'center';
+  const resolvedSize = backgroundSize === 'center' ? 'auto' : backgroundSize;
+  const resolvedPosition = resolveBackgroundPosition(backgroundPosition);
   return (
     <section
       data-background-color={slide.backgroundColor ?? undefined}
       data-background-image={slide.backgroundImagePath ?? undefined}
+      data-background-size={slide.backgroundImagePath ? resolvedSize : undefined}
+      data-background-position={slide.backgroundImagePath ? resolvedPosition : undefined}
       data-transition={slide.transitionOverride ?? undefined}
       data-autoslide={slide.autoSlideMsOverride ?? undefined}
       style={{ width: '100%', height: '100%' }}
