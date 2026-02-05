@@ -1,21 +1,21 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import type { ActiveSlideshowChangedEvent, ApiResponse, ScreenDeckDto } from '@/lib/types';
+import type { ApiResponse, ScreenDeckDto } from '@/lib/types';
 import { useScreenLiveRefresh } from '@/lib/hooks/useScreenLiveRefresh';
-import { useActiveSlideshowEvents } from '@/lib/hooks/useActiveSlideshowEvents';
+import { useDisplayMountEvents } from '@/lib/hooks/useDisplayMountEvents';
 import RevealDeck from './RevealDeck';
 
 export default function LiveRevealDeck({
   initialDeck,
   slideshowId,
   screenKey,
-  watchActiveSlideshow = false
+  displayName
 }: {
   initialDeck: ScreenDeckDto;
   slideshowId: string;
   screenKey: string;
-  watchActiveSlideshow?: boolean;
+  displayName?: string;
 }) {
   const [deck, setDeck] = useState<ScreenDeckDto>(initialDeck);
   const [revision, setRevision] = useState<number>(initialDeck.screen.revision);
@@ -40,15 +40,6 @@ export default function LiveRevealDeck({
     setRevision(nextDeck.screen.revision);
   }, []);
 
-  const handleActiveChange = useCallback(
-    (event: ActiveSlideshowChangedEvent) => {
-      if (event.slideshowId !== slideshowId) {
-        window.location.reload();
-      }
-    },
-    [slideshowId]
-  );
-
   useScreenLiveRefresh({
     slideshowId,
     screenKey,
@@ -57,9 +48,12 @@ export default function LiveRevealDeck({
     onDeckUpdate: handleDeckUpdate
   });
 
-  useActiveSlideshowEvents({
-    enabled: watchActiveSlideshow,
-    onActiveChange: handleActiveChange
+  useDisplayMountEvents({
+    enabled: !!displayName,
+    displayName: displayName ?? '',
+    onMountChange: () => {
+      window.location.reload();
+    }
   });
 
   return (

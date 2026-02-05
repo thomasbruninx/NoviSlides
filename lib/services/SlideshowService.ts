@@ -24,10 +24,6 @@ export class SlideshowService {
     return this.slideshowRepo.getByIdWithScreens(id);
   }
 
-  async getActiveSlideshow() {
-    return this.slideshowRepo.getActive();
-  }
-
   async createSlideshow(input: {
     name: string;
     defaultAutoSlideMs?: number;
@@ -82,7 +78,6 @@ export class SlideshowService {
     controls?: boolean;
     autoSlideStoppable?: boolean;
     defaultScreenKey?: string;
-    isActive?: boolean;
   }) {
     const shouldBump =
       data.defaultAutoSlideMs !== undefined ||
@@ -119,21 +114,6 @@ export class SlideshowService {
 
   async deleteSlideshow(id: string) {
     return this.slideshowRepo.delete(id);
-  }
-
-  async activateSlideshow(id: string) {
-    const slideshow = await this.slideshowRepo.activate(id);
-    eventHub.publish({
-      type: 'activeSlideshowChanged',
-      slideshowId: slideshow.id,
-      defaultScreenKey: slideshow.defaultScreenKey,
-      at: new Date().toISOString()
-    });
-    return slideshow;
-  }
-
-  async deactivateSlideshow(id: string) {
-    return this.slideshowRepo.deactivate(id);
   }
 
   async createScreen(slideshowId: string, input: { key: string; width?: number; height?: number }) {
@@ -209,8 +189,7 @@ export class SlideshowService {
     return prisma.$transaction(async (tx) => {
       const slideshow = await tx.slideshow.create({
         data: {
-          name: 'Demo Multi-Screen',
-          isActive: false,
+          name: 'Demo Slideshow',
           defaultAutoSlideMs: 6000,
           revealTransition: 'fade',
           loop: true,
@@ -228,28 +207,20 @@ export class SlideshowService {
           height: DEFAULT_RESOLUTION.height
         }
       });
-      const sideScreen = await tx.screen.create({
-        data: {
-          slideshowId: slideshow.id,
-          key: 'side',
-          width: DEFAULT_RESOLUTION.width,
-          height: DEFAULT_RESOLUTION.height
-        }
-      });
 
       const mainSlide = await tx.slide.create({
         data: {
           screenId: mainScreen.id,
           orderIndex: 0,
-          title: 'Main Screen',
+          title: 'Welcome',
           backgroundColor: '#101622'
         }
       });
-      const sideSlide = await tx.slide.create({
+      const updatesSlide = await tx.slide.create({
         data: {
-          screenId: sideScreen.id,
-          orderIndex: 0,
-          title: 'Side Screen',
+          screenId: mainScreen.id,
+          orderIndex: 1,
+          title: 'Updates',
           backgroundColor: '#141b2b'
         }
       });
@@ -267,7 +238,7 @@ export class SlideshowService {
           zIndex: 0,
           animation: 'appear',
           dataJson: JSON.stringify({
-            text: 'Main display content',
+            text: 'NoviSlides demo',
             fontSize: 64,
             fontFamily: 'Space Grotesk, Segoe UI, Arial',
             color: '#ffffff',
@@ -278,7 +249,7 @@ export class SlideshowService {
 
       await tx.slideElement.create({
         data: {
-          slideId: sideSlide.id,
+          slideId: updatesSlide.id,
           type: 'label',
           x: 140,
           y: 180,
@@ -289,7 +260,7 @@ export class SlideshowService {
           zIndex: 0,
           animation: 'appear',
           dataJson: JSON.stringify({
-            text: 'Secondary screen',
+            text: 'Add slides, then mount this slideshow to a display.',
             fontSize: 56,
             fontFamily: 'Space Grotesk, Segoe UI, Arial',
             color: '#a9c1ff',

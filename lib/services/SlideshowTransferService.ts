@@ -65,7 +65,6 @@ export class SlideshowTransferService {
       const created = await tx.slideshow.create({
         data: {
           name,
-          isActive: false,
           defaultAutoSlideMs: payload.slideshow.defaultAutoSlideMs,
           revealTransition: payload.slideshow.revealTransition,
           loop: payload.slideshow.loop,

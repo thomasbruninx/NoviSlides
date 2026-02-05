@@ -31,8 +31,7 @@ export const updateSlideshowSchema = z.object({
   loop: z.boolean().optional(),
   controls: z.boolean().optional(),
   autoSlideStoppable: z.boolean().optional(),
-  defaultScreenKey: screenKeySchema.optional(),
-  isActive: z.boolean().optional()
+  defaultScreenKey: screenKeySchema.optional()
 });
 
 export const createScreenSchema = z.object({
@@ -195,4 +194,26 @@ export const slideshowExportSchema = z.object({
 export const slideshowImportSchema = z.object({
   data: slideshowExportSchema,
   nameOverride: z.string().min(1).optional()
+});
+
+export const displayNameSchema = z
+  .string()
+  .min(1)
+  .max(80)
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Display name must be alphanumeric with dashes/underscores');
+
+export const createDisplaySchema = z.object({
+  name: displayNameSchema,
+  width: z.number().int().positive(),
+  height: z.number().int().positive()
+});
+
+export const updateDisplaySchema = z.object({
+  name: displayNameSchema.optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional()
+});
+
+export const mountSlideshowSchema = z.object({
+  displayId: z.string().min(1)
 });

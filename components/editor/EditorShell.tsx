@@ -33,6 +33,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  DisplayDto,
   MediaAssetDto,
   ScreenDto,
   SlideDto,
@@ -133,6 +134,11 @@ export default function EditorShell() {
     queryFn: () => apiFetch<SlideshowDto[]>('/api/slideshows')
   });
 
+  const displaysQuery = useQuery({
+    queryKey: ['displays'],
+    queryFn: () => apiFetch<DisplayDto[]>('/api/displays')
+  });
+
   const screenQuery = useQuery({
     queryKey: ['screen', selectedSlideshowId],
     queryFn: () => apiFetch<ScreenDto>(`/api/slideshows/${selectedSlideshowId}/screen`),
@@ -146,6 +152,7 @@ export default function EditorShell() {
   });
 
   const slideshows = useMemo(() => slideshowsQuery.data ?? [], [slideshowsQuery.data]);
+  const displays = useMemo(() => displaysQuery.data ?? [], [displaysQuery.data]);
   const screen = screenQuery.data ?? null;
   const slides = useMemo(() => slidesQuery.data ?? [], [slidesQuery.data]);
 
@@ -207,11 +214,51 @@ export default function EditorShell() {
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
-  const activateMutation = useMutation({
-    mutationFn: (id: string) => apiFetch<SlideshowDto>(`/api/slideshows/${id}/activate`, { method: 'POST' }),
+  const mountMutation = useMutation({
+    mutationFn: ({ slideshowId, displayId }: { slideshowId: string; displayId: string }) =>
+      apiFetch<DisplayDto>(`/api/slideshows/${slideshowId}/mount`, {
+        method: 'POST',
+        body: JSON.stringify({ displayId })
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['slideshows'] });
-      notifications.show({ color: 'green', message: 'Slideshow activated' });
+      queryClient.invalidateQueries({ queryKey: ['displays'] });
+      notifications.show({ color: 'green', message: 'Slideshow mounted' });
+    },
+    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
+  });
+
+  const unmountMutation = useMutation({
+    mutationFn: (slideshowId: string) =>
+      apiFetch<{ unmountedCount: number }>(`/api/slideshows/${slideshowId}/unmount`, {
+        method: 'POST'
+      }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['displays'] });
+      notifications.show({
+        color: 'green',
+        message:
+          result.unmountedCount > 0
+            ? `Unmounted from ${result.unmountedCount} display${result.unmountedCount === 1 ? '' : 's'}`
+            : 'Slideshow was not mounted'
+      });
+    },
+    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
+  });
+
+  const unmountAllMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ unmountedCount: number }>('/api/displays/unmount-all', {
+        method: 'POST'
+      }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['displays'] });
+      notifications.show({
+        color: 'green',
+        message:
+          result.unmountedCount > 0
+            ? `Unmounted ${result.unmountedCount} display${result.unmountedCount === 1 ? '' : 's'}`
+            : 'No mounted displays to unmount'
+      });
     },
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
@@ -1132,12 +1179,15 @@ export default function EditorShell() {
             slideshows={slideshows}
             selectedId={selectedSlideshowId}
             templates={templatesQuery.data ?? []}
+            displays={displays}
             onSelect={(id) => {
               handleSelectSlideshow(id);
               setShowSlideshows(false);
             }}
             onCreate={(payload) => createSlideshowMutation.mutate(payload)}
-            onActivate={(id) => activateMutation.mutate(id)}
+            onMount={(slideshowId, displayId) => mountMutation.mutate({ slideshowId, displayId })}
+            onUnmount={(slideshowId) => unmountMutation.mutate(slideshowId)}
+            onUnmountAll={() => unmountAllMutation.mutate()}
             onDelete={(id) => deleteSlideshowMutation.mutate(id)}
             onCreateDemo={() => createDemoMutation.mutate()}
             onExport={handleExportSlideshow}
@@ -1464,7 +1514,7 @@ export default function EditorShell() {
           </Group>
         </Box>
       </AppShell.Main>
-      {(slideshowsQuery.isLoading || screenQuery.isLoading || slidesQuery.isLoading) && (
+      {(slideshowsQuery.isLoading || displaysQuery.isLoading || screenQuery.isLoading || slidesQuery.isLoading) && (
         <Box style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
           <Loader />
         </Box>

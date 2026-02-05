@@ -112,7 +112,6 @@ export type ScreenDto = {
 export type SlideshowDto = {
   id: string;
   name: string;
-  isActive: boolean;
   defaultAutoSlideMs: number;
   revealTransition: string;
   loop: boolean;
@@ -122,6 +121,16 @@ export type SlideshowDto = {
   createdAt: string;
   updatedAt: string;
   screens?: ScreenDto[];
+};
+
+export type DisplayDto = {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  mountedSlideshowId: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ScreenDeckDto = {

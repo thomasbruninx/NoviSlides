@@ -1,5 +1,5 @@
 import { prisma } from '../db/prisma';
-import type { Prisma, Slideshow } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 export class SlideshowRepository {
   async list() {
@@ -38,10 +38,6 @@ export class SlideshowRepository {
     });
   }
 
-  async getActive() {
-    return prisma.slideshow.findFirst({ where: { isActive: true } });
-  }
-
   async create(data: Prisma.SlideshowCreateInput) {
     return prisma.slideshow.create({ data });
   }
@@ -52,16 +48,5 @@ export class SlideshowRepository {
 
   async delete(id: string) {
     return prisma.slideshow.delete({ where: { id } });
-  }
-
-  async activate(id: string) {
-    return prisma.$transaction(async (tx) => {
-      await tx.slideshow.updateMany({ data: { isActive: false } });
-      return tx.slideshow.update({ where: { id }, data: { isActive: true } });
-    });
-  }
-
-  async deactivate(id: string) {
-    return prisma.slideshow.update({ where: { id }, data: { isActive: false } });
   }
 }

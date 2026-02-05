@@ -7,8 +7,9 @@ const screenQuerySchema = z.object({
   screenKey: z.string().min(1)
 });
 
-const activeQuerySchema = z.object({
-  scope: z.literal('active')
+const displayQuerySchema = z.object({
+  scope: z.literal('display'),
+  displayName: z.string().min(1)
 });
 
 export const runtime = 'nodejs';
@@ -28,14 +29,22 @@ export async function GET(request: Request) {
     await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
   };
 
-  let filter: { eventType: 'activeSlideshowChanged' } | { eventType: 'screenChanged'; slideshowId: string; screenKey: string };
+  let filter:
+    | { eventType: 'screenChanged'; slideshowId: string; screenKey: string }
+    | { eventType: 'displayMountChanged'; displayName: string };
 
-  if (scope === 'active') {
-    const parsedActive = activeQuerySchema.safeParse({ scope });
-    if (!parsedActive.success) {
-      return fail('validation_error', 'Invalid event stream params', 400, parsedActive.error.flatten());
+  if (scope === 'display') {
+    const parsedDisplay = displayQuerySchema.safeParse({
+      scope,
+      displayName: url.searchParams.get('displayName')
+    });
+    if (!parsedDisplay.success) {
+      return fail('validation_error', 'Invalid event stream params', 400, parsedDisplay.error.flatten());
     }
-    filter = { eventType: 'activeSlideshowChanged' };
+    filter = {
+      eventType: 'displayMountChanged',
+      displayName: parsedDisplay.data.displayName
+    };
   } else {
     const parsedScreen = screenQuerySchema.safeParse({
       slideshowId: url.searchParams.get('slideshowId'),
@@ -55,8 +64,8 @@ export async function GET(request: Request) {
     if (event.type === 'screenChanged') {
       void sendEvent('screenChanged', event);
     }
-    if (event.type === 'activeSlideshowChanged') {
-      void sendEvent('activeSlideshowChanged', event);
+    if (event.type === 'displayMountChanged') {
+      void sendEvent('displayMountChanged', event);
     }
   });
 

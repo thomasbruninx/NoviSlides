@@ -1,4 +1,5 @@
 export * from './SlideshowService';
+export * from './DisplayService';
 export * from './SlideService';
 export * from './ElementService';
 export * from './TemplateService';

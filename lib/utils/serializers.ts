@@ -1,10 +1,11 @@
-import type { Slideshow, Screen, Slide, SlideElement, MediaAsset } from '@prisma/client';
+import type { Slideshow, Screen, Slide, SlideElement, MediaAsset, Display } from '@prisma/client';
 import type {
   SlideshowDto,
   ScreenDto,
   SlideDto,
   SlideElementDto,
   MediaAssetDto,
+  DisplayDto,
   SlideElementAnimation,
   SlideElementType
 } from '../types';
@@ -89,5 +90,13 @@ export function toMediaAssetDto(asset: MediaAsset): MediaAssetDto {
     ...asset,
     kind,
     createdAt: asset.createdAt.toISOString()
+  };
+}
+
+export function toDisplayDto(display: Display): DisplayDto {
+  return {
+    ...display,
+    createdAt: display.createdAt.toISOString(),
+    updatedAt: display.updatedAt.toISOString()
   };
 }

@@ -35,6 +35,10 @@ export class InMemoryEventHub implements IEventHub {
       if (!('screenKey' in event)) return false;
       if (filter.screenKey !== event.screenKey) return false;
     }
+    if (filter.displayName) {
+      if (!('displayName' in event)) return false;
+      if (filter.displayName !== event.displayName) return false;
+    }
     return true;
   }
 }

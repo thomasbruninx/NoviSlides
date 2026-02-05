@@ -1,23 +1,25 @@
 import { useEffect, useRef } from 'react';
-import type { ActiveSlideshowChangedEvent } from '@/lib/types';
+import type { DisplayMountChangedEvent } from '@/lib/types';
 
-type UseActiveSlideshowEventsArgs = {
-  onActiveChange: (event: ActiveSlideshowChangedEvent) => void;
+type UseDisplayMountEventsArgs = {
+  displayName: string;
+  onMountChange: (event: DisplayMountChangedEvent) => void;
   reconnectIntervalMs?: number;
   enabled?: boolean;
 };
 
-export function useActiveSlideshowEvents({
-  onActiveChange,
+export function useDisplayMountEvents({
+  displayName,
+  onMountChange,
   reconnectIntervalMs = 30000,
   enabled = true
-}: UseActiveSlideshowEventsArgs) {
+}: UseDisplayMountEventsArgs) {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
 
-    const url = '/api/events?scope=active';
+    const url = `/api/events?scope=display&displayName=${encodeURIComponent(displayName)}`;
     let eventSource: EventSource | null = null;
 
     const clearReconnect = () => {
@@ -47,10 +49,10 @@ export function useActiveSlideshowEvents({
         clearReconnect();
       };
 
-      eventSource.addEventListener('activeSlideshowChanged', (raw) => {
+      eventSource.addEventListener('displayMountChanged', (raw) => {
         try {
-          const payload = JSON.parse((raw as MessageEvent).data) as ActiveSlideshowChangedEvent;
-          onActiveChange(payload);
+          const payload = JSON.parse((raw as MessageEvent).data) as DisplayMountChangedEvent;
+          onMountChange(payload);
         } catch {
           // Ignore malformed events.
         }
@@ -68,5 +70,5 @@ export function useActiveSlideshowEvents({
       clearReconnect();
       closeEventSource();
     };
-  }, [enabled, onActiveChange, reconnectIntervalMs]);
+  }, [displayName, enabled, onMountChange, reconnectIntervalMs]);
 }

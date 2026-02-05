@@ -1,4 +1,4 @@
-﻿import { IMAGE_PLACEHOLDER } from './placeholders';
+import { IMAGE_PLACEHOLDER } from './placeholders';
 import type { TemplateDefinition } from './types';
 
 const defaultResolution = { width: 1920, height: 540 };
@@ -40,7 +40,7 @@ export const templates: TemplateDefinition[] = [
                 width: 1200,
                 height: 80,
                 dataJson: {
-                  text: 'Build multi-screen shows in minutes',
+                  text: 'Build display-ready shows in minutes',
                   fontSize: 48,
                   fontFamily: 'Plus Jakarta Sans, Segoe UI, Arial',
                   color: '#9fb7ff',
@@ -174,7 +174,7 @@ export const templates: TemplateDefinition[] = [
                 width: 520,
                 height: 220,
                 dataJson: {
-                  text: '- New release shipped\n- Multi-screen rooms live\n- Team workshop at 3PM',
+                  text: '- New release shipped\n- Display playlists live\n- Team workshop at 3PM',
                   fontSize: 34,
                   fontFamily: 'Plus Jakarta Sans, Segoe UI, Arial',
                   color: '#cbd6f6',
@@ -214,4 +214,3 @@ export const templates: TemplateDefinition[] = [
 ];
 
 export const DEFAULT_TEMPLATE_KEY = templates.find((template) => template.isDefault)?.key ?? 'default-starter';
-

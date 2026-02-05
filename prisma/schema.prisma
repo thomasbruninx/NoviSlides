@@ -12,7 +12,6 @@ generator client {
 model Slideshow {
   id                 String   @id @default(cuid())
   name               String
-  isActive           Boolean  @default(false)
   defaultAutoSlideMs Int      @default(5000)
   revealTransition   String   @default("slide")
   loop               Boolean  @default(true)
@@ -23,6 +22,7 @@ model Slideshow {
   updatedAt          DateTime @updatedAt
 
   screens            Screen[]
+  mountedDisplay     Display?
 }
 
 model Screen {
@@ -96,4 +96,16 @@ model MediaAsset {
 
   @@index([createdAt])
   @@index([kind])
+}
+
+model Display {
+  id                String    @id @default(cuid())
+  name              String    @unique
+  width             Int
+  height            Int
+  mountedSlideshowId String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  mountedSlideshow Slideshow? @relation(fields: [mountedSlideshowId], references: [id], onDelete: SetNull)
 }
