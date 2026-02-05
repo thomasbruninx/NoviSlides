@@ -8,6 +8,7 @@ import { resolveMediaPath } from '@/lib/utils/media';
 import { apiFetch } from '@/lib/utils/api';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
+import { getIconUrl, iconStyles, type IconStyle } from '@/lib/utils/icons';
 
 const animationOptions: Array<{ value: SlideElementAnimation; label: string }> = [
   { value: 'none', label: 'None' },
@@ -28,12 +29,14 @@ export default function ElementPropsPanel({
   onChange,
   onChooseImage,
   onChooseVideo,
+  onChooseIcon,
   showTitle = true
 }: {
   element: SlideElementDto | null;
   onChange: (attrs: Partial<SlideElementDto>) => void;
   onChooseImage?: () => void;
   onChooseVideo?: () => void;
+  onChooseIcon?: () => void;
   showTitle?: boolean;
 }) {
   const data = (element?.dataJson ?? {}) as Record<string, unknown>;
@@ -342,6 +345,67 @@ export default function ElementPropsPanel({
             value={(data.strokeWidth as number) ?? 2}
             onChange={(val) => updateData({ strokeWidth: toNumber(val) })}
             min={0}
+          />
+        </>
+      ) : element.type === 'symbol' ? (
+        <>
+          <Stack gap={6}>
+            <Text size="sm" fw={500}>
+              Icon
+            </Text>
+            {(data.iconName as string) ? (
+              <Box
+                style={{
+                  width: '100%',
+                  aspectRatio: '16 / 9',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: '#0b0f18',
+                  border: '1px solid #232a3b',
+                  display: 'grid',
+                  placeItems: 'center'
+                }}
+              >
+                <img
+                  src={getIconUrl(
+                    ((data.iconStyle as IconStyle | undefined) ?? 'filled'),
+                    data.iconName as string,
+                    (data.color as string | undefined) ?? '#ffffff'
+                  )}
+                  alt={data.iconName as string}
+                  style={{ width: '48%', height: '48%', objectFit: 'contain' }}
+                />
+              </Box>
+            ) : null}
+            <Text size="xs" c="dimmed" lineClamp={1}>
+              {(data.iconName as string) ?? 'No icon selected'}
+            </Text>
+            <Group justify="space-between" align="center">
+              <Button size="xs" variant="light" onClick={onChooseIcon} disabled={!onChooseIcon}>
+                Choose icon
+              </Button>
+              {(data.iconName as string) ? (
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="red"
+                  onClick={() => updateData({ iconName: '', iconStyle: undefined })}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </Group>
+          </Stack>
+          <Select
+            label="Style"
+            data={iconStyles.map((value) => ({ value, label: value.replace('-', ' ') }))}
+            value={((data.iconStyle as IconStyle | undefined) ?? 'filled')}
+            onChange={(value) => updateData({ iconStyle: (value as IconStyle) ?? 'filled' })}
+          />
+          <ColorInput
+            label="Color"
+            value={(data.color as string) ?? '#ffffff'}
+            onChange={(value) => updateData({ color: value })}
           />
         </>
       ) : (

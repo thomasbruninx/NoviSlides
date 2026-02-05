@@ -6,6 +6,7 @@ import useImage from 'use-image';
 import type Konva from 'konva';
 import type { SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
+import { getIconUrl } from '@/lib/utils/icons';
 import { buildFontSpec, isSystemFont } from '@/lib/utils/fonts';
 
 export default function ElementRenderer({
@@ -32,6 +33,20 @@ export default function ElementRenderer({
   const imagePath = resolveMediaPath(rawPath);
   const [image] = useImage(imagePath);
   const [videoThumbnail, setVideoThumbnail] = useState<HTMLVideoElement | null>(null);
+  const iconPath = useMemo(() => {
+    if (element.type !== 'symbol') return '';
+    const data = element.dataJson as Record<string, unknown>;
+    const iconName = (data.iconName as string | undefined) ?? '';
+    const iconStyle = (data.iconStyle as string | undefined) ?? 'filled';
+    const iconColor = (data.color as string | undefined) ?? '#ffffff';
+    if (!iconName) return '';
+    return getIconUrl(
+      iconStyle as 'filled' | 'outlined' | 'round' | 'sharp' | 'two-tone',
+      iconName,
+      iconColor
+    );
+  }, [element]);
+  const [iconImage] = useImage(iconPath);
 
   const videoPath = useMemo(() => {
     if (element.type !== 'video') return '';
@@ -287,6 +302,18 @@ export default function ElementRenderer({
           }
           ctx.fillStrokeShape(node);
         }}
+      />
+    );
+  }
+
+  if (element.type === 'symbol') {
+    return (
+      <KonvaImage
+        ref={refCallback}
+        {...commonProps}
+        image={iconImage}
+        stroke={isSelected ? '#54b3ff' : undefined}
+        strokeWidth={isSelected ? 1 : 0}
       />
     );
   }

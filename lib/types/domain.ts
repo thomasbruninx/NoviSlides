@@ -1,4 +1,4 @@
-export type SlideElementType = 'image' | 'label' | 'video' | 'shape';
+export type SlideElementType = 'image' | 'label' | 'video' | 'shape' | 'symbol';
 export type SlideElementAnimation = 'none' | 'fade' | 'zoom' | 'appear';
 export type SlideBackgroundImageSize = 'cover' | 'contain' | 'center';
 export type SlideBackgroundImagePosition =
@@ -51,11 +51,18 @@ export type SlideElementDataShape = SlideElementDataBase & {
   strokeWidth?: number;
 };
 
+export type SlideElementDataSymbol = SlideElementDataBase & {
+  iconName: string;
+  iconStyle?: 'filled' | 'outlined' | 'round' | 'sharp' | 'two-tone';
+  color?: string;
+};
+
 export type SlideElementData =
   | SlideElementDataImage
   | SlideElementDataVideo
   | SlideElementDataLabel
-  | SlideElementDataShape;
+  | SlideElementDataShape
+  | SlideElementDataSymbol;
 
 export type SlideElementDto = {
   id: string;

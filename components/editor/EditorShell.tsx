@@ -39,6 +39,7 @@ import SlidePropsPanel from './panels/SlidePropsPanel';
 import ElementPropsPanel from './panels/ElementPropsPanel';
 import SlideshowPropsPanel from './panels/SlideshowPropsPanel';
 import MediaLibraryModal from './media/MediaLibraryModal';
+import IconLibraryModal from './media/IconLibraryModal';
 import EditorSettingsModal from './EditorSettingsModal';
 
 const defaultLabelData: SlideElementDto['dataJson'] = {
@@ -72,12 +73,18 @@ export default function EditorShell() {
   const [showScreens, setShowScreens] = useState(false);
   const [showSlides, setShowSlides] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [showIconLibrary, setShowIconLibrary] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [mediaIntent, setMediaIntent] = useState<
     | { type: 'add-element' }
     | { type: 'slide-background' }
     | { type: 'element-image'; elementId: string }
     | { type: 'element-video'; elementId: string }
+    | null
+  >(null);
+  const [iconIntent, setIconIntent] = useState<
+    | { type: 'add-element' }
+    | { type: 'element-symbol'; elementId: string }
     | null
   >(null);
   const undoStack = useRef<{ id: string; prev: Partial<SlideElementDto> }[]>([]);
@@ -749,6 +756,11 @@ export default function EditorShell() {
     setShowMediaLibrary(true);
   };
 
+  const handleAddIcon = () => {
+    setIconIntent({ type: 'add-element' });
+    setShowIconLibrary(true);
+  };
+
   const handleAddShape = async (shape: 'rectangle' | 'circle' | 'triangle') => {
     if (!selectedSlideId) return;
     const saved = await flushPendingSavesRef.current();
@@ -860,6 +872,47 @@ export default function EditorShell() {
           }
     });
     return true;
+  };
+
+  const handleIconSelected = async (payload: { name: string; style: string }) => {
+    if (!iconIntent) return;
+    if (iconIntent.type === 'element-symbol') {
+      const targetElement = selectedSlide?.elements?.find((item) => item.id === iconIntent.elementId) ?? null;
+      if (!targetElement) return;
+      const data = (targetElement.dataJson as Record<string, unknown>) ?? {};
+      handleElementChange({
+        dataJson: {
+          ...data,
+          iconName: payload.name,
+          iconStyle: payload.style
+        }
+      });
+      return;
+    }
+
+    if (!selectedSlideId) return;
+    const saved = await flushPendingSavesRef.current();
+    if (!saved) {
+      notifications.show({ color: 'red', message: 'Save failed. Resolve errors before adding elements.' });
+      return;
+    }
+    const nextZ = (selectedSlide?.elements ?? []).reduce((max, el) => Math.max(max, el.zIndex), 0) + 1;
+    createElementMutation.mutate({
+      type: 'symbol',
+      x: 160,
+      y: 160,
+      width: 160,
+      height: 160,
+      rotation: 0,
+      opacity: 1,
+      zIndex: nextZ,
+      animation: 'none',
+      dataJson: {
+        iconName: payload.name,
+        iconStyle: payload.style,
+        color: '#ffffff'
+      }
+    });
   };
 
   const handleBringForward = () => {
@@ -1005,6 +1058,7 @@ export default function EditorShell() {
                 <Menu.Dropdown>
                   <Menu.Item onClick={handleAddLabel}>Label</Menu.Item>
                   <Menu.Item onClick={handleAddMedia}>Media</Menu.Item>
+                  <Menu.Item onClick={handleAddIcon}>Icon</Menu.Item>
                   <Menu
                     position="right-start"
                     trigger="hover"
@@ -1202,6 +1256,14 @@ export default function EditorShell() {
                               }
                             : undefined
                         }
+                        onChooseIcon={
+                          selectedElement && selectedElement.type === 'symbol'
+                            ? () => {
+                                setIconIntent({ type: 'element-symbol', elementId: selectedElement.id });
+                                setShowIconLibrary(true);
+                              }
+                            : undefined
+                        }
                         showTitle={false}
                       />
                     </Accordion.Panel>
@@ -1242,6 +1304,18 @@ export default function EditorShell() {
           mediaIntent?.type === 'element-image' ||
           mediaIntent?.type === 'element-video'
         }
+      />
+      <IconLibraryModal
+        opened={showIconLibrary}
+        onClose={() => {
+          setShowIconLibrary(false);
+          setIconIntent(null);
+        }}
+        onSelect={(payload) => {
+          handleIconSelected(payload);
+          setShowIconLibrary(false);
+          setIconIntent(null);
+        }}
       />
       <EditorSettingsModal opened={showSettings} onClose={() => setShowSettings(false)} />
     </AppShell>

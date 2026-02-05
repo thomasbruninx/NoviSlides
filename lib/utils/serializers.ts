@@ -43,7 +43,7 @@ export function toSlideElementDto(element: SlideElement): SlideElementDto {
     }
   }
 
-  const type = (['image', 'label', 'video', 'shape'] as const).includes(element.type as SlideElementType)
+  const type = (['image', 'label', 'video', 'shape', 'symbol'] as const).includes(element.type as SlideElementType)
     ? (element.type as SlideElementType)
     : 'label';
   const animation = (['none', 'fade', 'zoom', 'appear'] as const).includes(

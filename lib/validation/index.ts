@@ -78,7 +78,7 @@ export const reorderSlidesSchema = z.object({
   orderedIds: z.array(z.string().min(1)).min(1)
 });
 
-export const slideElementTypeSchema = z.enum(['image', 'label', 'video', 'shape']);
+export const slideElementTypeSchema = z.enum(['image', 'label', 'video', 'shape', 'symbol']);
 export const slideElementAnimationSchema = z.enum(['none', 'fade', 'zoom', 'appear']);
 
 export const createElementSchema = z.object({
@@ -121,4 +121,13 @@ export const mediaListQuerySchema = z.object({
 export const mediaUploadFileSchema = z.object({
   filename: z.string().min(1),
   mimeType: z.string().min(1)
+});
+
+export const iconStyleSchema = z.enum(['filled', 'outlined', 'round', 'sharp', 'two-tone']);
+
+export const iconListQuerySchema = z.object({
+  query: z.string().optional().default(''),
+  style: iconStyleSchema.default('filled'),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(200).default(60)
 });

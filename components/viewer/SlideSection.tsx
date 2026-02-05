@@ -3,6 +3,7 @@ import clsx from 'clsx';
 /* eslint-disable @next/next/no-img-element */
 import type { SlideDto, SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
+import { getIconUrl } from '@/lib/utils/icons';
 
 function getFragmentClass(animation?: string) {
   switch (animation) {
@@ -124,6 +125,37 @@ export default function SlideSection({
               ? { transitionDelay: `${animationDelayMs}ms` }
               : {})
           };
+          if (element.type === 'symbol') {
+            const iconName = (data.iconName as string | undefined) ?? '';
+            const iconStyle = (data.iconStyle as string | undefined) ?? 'filled';
+            const iconColor = (data.color as string | undefined) ?? '#ffffff';
+            const iconPath = iconName
+              ? getIconUrl(
+                  iconStyle as 'filled' | 'outlined' | 'round' | 'sharp' | 'two-tone',
+                  iconName,
+                  iconColor
+                )
+              : '';
+            return (
+              <div
+                key={element.id}
+                className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
+                data-fragment-index={fragmentIndex}
+                style={fragmentStyle}
+              >
+                <div style={contentStyle}>
+                  {iconPath ? (
+                    <img
+                      src={iconPath}
+                      alt={iconName}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            );
+          }
+
           if (element.type === 'shape') {
             const shape = (data.shape as string) ?? 'rectangle';
             const fill = (data.fill as string) ?? '#2b3447';
