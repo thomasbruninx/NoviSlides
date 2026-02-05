@@ -21,7 +21,8 @@ import {
 import { 
   FlipToFront as FlipToFrontIcon, 
   FlipToBack as FlipToBackIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Add as AddIcon,
 } from '@nine-thirty-five/material-symbols-react/outlined';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -837,7 +838,7 @@ export default function EditorShell() {
         ? {
             path: resolvedPath,
             mediaAssetId: asset.id,
-            autoplay: false,
+            autoplay: true,
             loop: true,
             muted: true,
             controls: false
@@ -985,24 +986,35 @@ export default function EditorShell() {
                 <Button size="xs" variant="light" onClick={() => setShowSlides(true)} disabled={!selectedScreenId}>
                   Slides
                 </Button>
-                <Button size="xs" variant="light" onClick={handleAddLabel} disabled={!selectedSlideId}>
-                  Add Label
-                </Button>
-                <Button size="xs" variant="light" onClick={handleAddMedia} disabled={!selectedSlideId}>
-                  Add Media
-                </Button>
                 <Menu position="bottom-start" shadow="md">
                   <Menu.Target>
                     <Button size="xs" variant="light" disabled={!selectedSlideId}>
-                      Add Shape
+                      <AddIcon />
                     </Button>
                   </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item onClick={() => handleAddShape('rectangle')}>Rectangle</Menu.Item>
-                    <Menu.Item onClick={() => handleAddShape('circle')}>Circle</Menu.Item>
-                    <Menu.Item onClick={() => handleAddShape('triangle')}>Triangle</Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
+                <Menu.Dropdown>
+                  <Menu.Item onClick={handleAddLabel}>Label</Menu.Item>
+                  <Menu.Item onClick={handleAddMedia}>Media</Menu.Item>
+                  <Menu
+                    position="right-start"
+                    trigger="hover"
+                    withinPortal={false}
+                    closeOnItemClick={false}
+                    offset={6}
+                  >
+                    <Menu.Target>
+                      <Menu.Item closeMenuOnClick={false} rightSection={<Text size="xs">›</Text>}>
+                        Shapes
+                      </Menu.Item>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={() => handleAddShape('rectangle')}>Rectangle</Menu.Item>
+                      <Menu.Item onClick={() => handleAddShape('circle')}>Circle</Menu.Item>
+                      <Menu.Item onClick={() => handleAddShape('triangle')}>Triangle</Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Menu.Dropdown>
+              </Menu>
                 
                 <Tooltip
                   label="Bring element forward"

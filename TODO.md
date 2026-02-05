@@ -1,8 +1,6 @@
 - Caching mechanism
 - Fix background preview in editor
 - Add option to choose between cover, contain, center for background image size
-- Make layers more controllable (move up/down), mostly easier UI
-- Clean up UI
 - Replace active slide logic with endpoint system
 - Add authentication system
 - Upgrade outdated dependencies
