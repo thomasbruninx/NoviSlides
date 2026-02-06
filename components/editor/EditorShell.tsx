@@ -793,6 +793,57 @@ export default function EditorShell() {
         })();
         return;
       }
+      if (
+        selectedElement &&
+        selectedScreen &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        (event.key === 'ArrowUp' ||
+          event.key === 'ArrowDown' ||
+          event.key === 'ArrowLeft' ||
+          event.key === 'ArrowRight')
+      ) {
+        let deltaX = 0;
+        let deltaY = 0;
+        if (event.key === 'ArrowUp') deltaY = -1;
+        if (event.key === 'ArrowDown') deltaY = 1;
+        if (event.key === 'ArrowLeft') deltaX = -1;
+        if (event.key === 'ArrowRight') deltaX = 1;
+
+        const maxX = Math.max(0, selectedScreen.width - selectedElement.width);
+        const maxY = Math.max(0, selectedScreen.height - selectedElement.height);
+        const nextX = Math.min(maxX, Math.max(0, selectedElement.x + deltaX));
+        const nextY = Math.min(maxY, Math.max(0, selectedElement.y + deltaY));
+
+        if (nextX === selectedElement.x && nextY === selectedElement.y) {
+          event.preventDefault();
+          return;
+        }
+
+        event.preventDefault();
+        if (!event.repeat) {
+          undoStack.current.push({
+            id: selectedElement.id,
+            prev: {
+              type: selectedElement.type,
+              x: selectedElement.x,
+              y: selectedElement.y,
+              width: selectedElement.width,
+              height: selectedElement.height,
+              rotation: selectedElement.rotation,
+              opacity: selectedElement.opacity,
+              zIndex: selectedElement.zIndex,
+              animation: selectedElement.animation,
+              dataJson: selectedElement.dataJson
+            }
+          });
+        }
+        markDirty();
+        updateElementLocal(selectedElement.id, { x: nextX, y: nextY });
+        queueElementSave(selectedElement.id, { x: nextX, y: nextY });
+        return;
+      }
       if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
         event.preventDefault();
         deleteElementMutation.mutate(selectedElementId);
@@ -828,6 +879,7 @@ export default function EditorShell() {
     queueElementSave,
     selectedElement,
     selectedElementId,
+    selectedScreen,
     selectedSlide,
     selectedSlideId,
     setClipboard,
