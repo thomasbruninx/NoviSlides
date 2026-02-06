@@ -1,6 +1,4 @@
-- Caching mechanism
-- "Plug-in" system for custom elements
+- Add "Plug-in" system for custom elements
 - Add authentication system
-- Upgrade outdated dependencies
 - Add help content
 - Dockerized deployment

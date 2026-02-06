@@ -33,3 +33,4 @@ NoviSlides uses the following open-source libraries and resources:
 - [SQLite](https://www.sqlite.org/index.html) - Public Domain
 - [TypeScript](https://www.typescriptlang.org/) - Apache License 2.0
 - [Playwright](https://playwright.dev/) - Apache License 2.0
+- [Zod](https://zod.dev/) - MIT License
