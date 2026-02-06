@@ -21,6 +21,7 @@ export default function LiveDisplayEmpty({
 
   useDisplayMountEvents({
     displayName,
+    initialMountedSlideshowId: null,
     onMountChange: handleMountChange
   });
 

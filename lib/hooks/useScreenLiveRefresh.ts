@@ -53,6 +53,7 @@ export function useScreenLiveRefresh({
   useEffect(() => {
     const startPolling = () => {
       if (pollTimerRef.current) return;
+      void applyDeckIfNewer();
       pollTimerRef.current = setInterval(() => {
         void applyDeckIfNewer();
       }, pollIntervalMs);
@@ -96,6 +97,7 @@ export function useScreenLiveRefresh({
         errorCountRef.current = 0;
         stopPolling();
         clearReconnect();
+        void applyDeckIfNewer();
       };
 
       eventSource.addEventListener('screenChanged', (raw) => {

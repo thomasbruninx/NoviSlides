@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import { Box, Button, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import { 
+  Delete as DeleteIcon,
+  ContentCopy as ContentCopyIcon,
+} from '@nine-thirty-five/material-symbols-react/outlined';
 import type { SlideDto } from '@/lib/types';
 
 export default function SlidesSidebar({
@@ -61,34 +65,43 @@ export default function SlidesSidebar({
                 borderColor: slide.id === selectedSlideId ? '#54b3ff' : undefined
               }}
             >
-              <Group justify="space-between">
-                <Stack gap={2}>
-                  <Text size="sm" fw={600}>
-                    {slide.title || `Slide ${index + 1}`}
-                  </Text>
-                </Stack>
-                <Group gap="xs">
-                  <Button
-                    size="xs"
-                    variant="subtle"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDuplicate(slide.id);
-                    }}
-                  >
-                    Duplicate
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="subtle"
-                    color="red"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDelete(slide.id);
-                    }}
-                  >
-                    Delete
-                  </Button>
+              <Group align="center" gap="md" wrap="nowrap">
+                <Box className="slide-drag-handle" aria-hidden>
+                  {Array.from({ length: 8 }).map((_, dotIndex) => (
+                    <span key={`${slide.id}-dot-${dotIndex}`} className="slide-drag-handle-dot" />
+                  ))}
+                </Box>
+                <Group justify="space-between" style={{ flex: 1, minWidth: 0 }} wrap="nowrap">
+                  <Stack gap={2} style={{ minWidth: 0 }}>
+                    <Text size="sm" fw={600} truncate="end">
+                      {slide.title || `Slide ${index + 1}`}
+                    </Text>
+                  </Stack>
+                  <Group gap="xs">
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      px={2}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDuplicate(slide.id);
+                      }}
+                    >
+                      <ContentCopyIcon/>
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      px={2}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDelete(slide.id);
+                      }}
+                    >
+                      <DeleteIcon/>
+                    </Button>
+                  </Group>
                 </Group>
               </Group>
             </Paper>

@@ -51,6 +51,7 @@ export default function LiveRevealDeck({
   useDisplayMountEvents({
     enabled: !!displayName,
     displayName: displayName ?? '',
+    initialMountedSlideshowId: slideshowId,
     onMountChange: () => {
       window.location.reload();
     }
