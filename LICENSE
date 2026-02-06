@@ -34,3 +34,4 @@ NoviSlides uses the following open-source libraries and resources:
 - [TypeScript](https://www.typescriptlang.org/) - Apache License 2.0
 - [Playwright](https://playwright.dev/) - Apache License 2.0
 - [Zod](https://zod.dev/) - MIT License
+- [dnd-kit](https://dndkit.com/) - MIT License
