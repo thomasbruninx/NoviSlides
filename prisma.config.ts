@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { defineConfig } from 'prisma/config';
 import path from 'node:path';
 
 function resolveSchemaRelativeSqliteUrl(databaseUrl: string): string {
@@ -23,21 +22,12 @@ const databaseUrl = resolveSchemaRelativeSqliteUrl(
   process.env.DATABASE_URL ?? 'file:./prisma/dev.db'
 );
 
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-  prismaAdapter?: PrismaBetterSqlite3;
-};
-
-const adapter = globalForPrisma.prismaAdapter ?? new PrismaBetterSqlite3({ url: databaseUrl });
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-    log: ['error', 'warn']
-  });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-  globalForPrisma.prismaAdapter = adapter;
-}
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  migrations: {
+    path: 'prisma/migrations'
+  },
+  datasource: {
+    url: databaseUrl
+  }
+});
