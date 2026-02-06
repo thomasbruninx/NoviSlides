@@ -10,3 +10,4 @@ export * from './FontService';
 export * from './IconService';
 export * from './SlideshowTransferService';
 export * from './DocsService';
+export * from './AuthService';

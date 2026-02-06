@@ -1,4 +1,2 @@
 - Add "Plug-in" system for custom elements
-- Add authentication system
 - Add help content
-- Dockerized deployment

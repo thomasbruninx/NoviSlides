@@ -1,7 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, NumberInput, Paper, ScrollArea, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Button,
+  Divider,
+  Group,
+  Modal,
+  NumberInput,
+  Paper,
+  PasswordInput,
+  ScrollArea,
+  Stack,
+  Text,
+  TextInput
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { DisplayDto } from '@/lib/types';
@@ -26,6 +38,8 @@ export default function EditorSettingsModal({
   const queryClient = useQueryClient();
   const [formOpened, setFormOpened] = useState(false);
   const [origin, setOrigin] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [formState, setFormState] = useState<DisplayFormState>({
     name: '',
     width: 1920,
@@ -84,6 +98,31 @@ export default function EditorSettingsModal({
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
+  const updatePasswordMutation = useMutation({
+    mutationFn: (payload: { password: string; confirmPassword: string }) =>
+      apiFetch<{ updated: boolean }>('/api/auth/password', {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      }),
+    onSuccess: () => {
+      setNewPassword('');
+      setConfirmPassword('');
+      notifications.show({ color: 'green', message: 'Password updated' });
+    },
+    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () =>
+      apiFetch<{ loggedOut: boolean }>('/api/auth/logout', {
+        method: 'POST'
+      }),
+    onSuccess: () => {
+      window.location.reload();
+    },
+    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
+  });
+
   const openCreateForm = () => {
     setFormState({ name: '', width: 1920, height: 540 });
     setFormOpened(true);
@@ -130,6 +169,9 @@ export default function EditorSettingsModal({
   const showNameError = formState.name.length > 0 && !isValidName;
   const displayPathPreview = trimmedName ? `/display/${encodeURIComponent(trimmedName)}` : '/display/<name>';
   const displayUrlPreview = origin ? `${origin}${displayPathPreview}` : displayPathPreview;
+  const isPasswordValid = newPassword.length >= 6;
+  const doPasswordsMatch = newPassword === confirmPassword;
+  const canUpdatePassword = isPasswordValid && doPasswordsMatch;
 
   return (
     <>
@@ -182,6 +224,50 @@ export default function EditorSettingsModal({
               ) : null}
             </Stack>
           </ScrollArea>
+          <Paper withBorder p="sm" radius="md">
+            <Stack gap="xs">
+              <Text fw={600} size="sm">
+                Editor Authentication
+              </Text>
+              <PasswordInput
+                label="New password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.currentTarget.value)}
+                description="Minimum 6 characters."
+              />
+              <PasswordInput
+                label="Confirm new password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.currentTarget.value)}
+                error={confirmPassword.length > 0 && !doPasswordsMatch ? 'Passwords do not match.' : null}
+              />
+              <Group justify="flex-end">
+                <Button
+                  onClick={() =>
+                    updatePasswordMutation.mutate({
+                      password: newPassword,
+                      confirmPassword
+                    })
+                  }
+                  disabled={!canUpdatePassword}
+                  loading={updatePasswordMutation.isPending}
+                >
+                  Update password
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+          <Divider />
+          <Group justify="flex-end">
+            <Button
+              color="red"
+              variant="light"
+              onClick={() => logoutMutation.mutate()}
+              loading={logoutMutation.isPending}
+            >
+              Logout
+            </Button>
+          </Group>
         </Stack>
       </Modal>
 

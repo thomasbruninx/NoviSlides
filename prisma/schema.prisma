@@ -108,3 +108,20 @@ model Display {
 
   mountedSlideshow Slideshow? @relation(fields: [mountedSlideshowId], references: [id], onDelete: SetNull)
 }
+
+model EditorAuth {
+  id           String   @id @default("default")
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model EditorSession {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  rememberMe Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+}

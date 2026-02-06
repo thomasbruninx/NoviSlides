@@ -38,6 +38,11 @@ Optional (for Google Fonts dropdown in the editor):
 GOOGLE_FONTS_API_KEY="your-google-fonts-api-key"
 ```
 
+Optional (initial editor password):
+```
+DEFAULT_PASSWORD="your-initial-editor-password"
+```
+
 3. Run Prisma migrations
 
 ```bash
@@ -51,6 +56,14 @@ npm run dev
 ```
 
 Important: SSE doesn't work in development mode, live refresh of the viewer falls back to long polling.
+
+### Editor Authentication
+- `/edit` requires a password login.
+- Default password is read from `DEFAULT_PASSWORD`.
+- If `DEFAULT_PASSWORD` is not set, fallback is `password`.
+- Use **Settings -> Editor Authentication** inside the editor to change it immediately.
+- Enable **Remember me** on login to keep access for 30 days via a secure HTTP-only cookie.
+- Set `EDITOR_AUTH_COOKIE_SECURE=true` when serving over HTTPS.
 
 ## Local Production
 Deploy a production-ready version locally:
@@ -79,6 +92,8 @@ cp .env.docker.example .env.docker
 - `NOVISLIDES_PORT` external host port
 - `DATABASE_URL` SQLite file path inside the container (default: `file:/data/dev.db`)
 - `GOOGLE_FONTS_API_KEY` optional
+- `EDITOR_AUTH_COOKIE_SECURE` set to `true` only when served over HTTPS
+- `DEFAULT_PASSWORD` initial editor password fallback (`password` if omitted)
 
 3. Build and start
 
@@ -96,6 +111,7 @@ Notes:
 - Database is persisted in Docker volume `novislides_db` mounted at `/data`.
 - Media uploads are persisted in Docker volume `novislides_uploads` mounted at `/app/public/uploads`.
 - On startup, the container runs `prisma migrate deploy` automatically before starting Next.js.
+- Default editor password follows `DEFAULT_PASSWORD` (fallback `password`) until changed in settings.
 
 ## Using the Editor
 - Open `http://localhost:3000/edit`

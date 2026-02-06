@@ -228,3 +228,18 @@ export const helpDocMetadataSchema = z.object({
     .nullable(),
   order: z.coerce.number().int().min(0).optional()
 });
+
+export const editorLoginSchema = z.object({
+  password: z.string().min(1),
+  rememberMe: z.boolean().optional().default(false)
+});
+
+export const updateEditorPasswordSchema = z
+  .object({
+    password: z.string().min(6).max(200),
+    confirmPassword: z.string().min(6).max(200)
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword']
+  });
