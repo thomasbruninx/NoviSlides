@@ -52,8 +52,8 @@ npm run dev
 
 Important: SSE doesn't work in development mode, live refresh of the viewer falls back to long polling.
 
-## Setup
-Deploy a production-ready version
+## Local Production
+Deploy a production-ready version locally:
 1. Run the build command
 
 ```bash
@@ -65,6 +65,37 @@ npm run build
 ```bash
 npm run start
 ```
+
+## Docker Deployment
+Use Docker Compose for a production stack with persistent storage for SQLite and uploads.
+
+1. Copy the Docker env template
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+2. Adjust values in `.env.docker`
+- `NOVISLIDES_PORT` external host port
+- `DATABASE_URL` SQLite file path inside the container (default: `file:/data/dev.db`)
+- `GOOGLE_FONTS_API_KEY` optional
+
+3. Build and start
+
+```bash
+docker compose --env-file .env.docker up -d --build
+```
+
+4. Stop
+
+```bash
+docker compose --env-file .env.docker down
+```
+
+Notes:
+- Database is persisted in Docker volume `novislides_db` mounted at `/data`.
+- Media uploads are persisted in Docker volume `novislides_uploads` mounted at `/app/public/uploads`.
+- On startup, the container runs `prisma migrate deploy` automatically before starting Next.js.
 
 ## Using the Editor
 - Open `http://localhost:3000/edit`

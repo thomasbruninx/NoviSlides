@@ -1,0 +1,21 @@
+services:
+  novislides:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: novislides:latest
+    restart: unless-stopped
+    ports:
+      - "${NOVISLIDES_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-file:/data/dev.db}"
+      GOOGLE_FONTS_API_KEY: "${GOOGLE_FONTS_API_KEY:-}"
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    volumes:
+      - novislides_db:/data
+      - novislides_uploads:/app/public/uploads
+
+volumes:
+  novislides_db:
+  novislides_uploads:

@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.gitignore
+.DS_Store
+test-results
+prisma/dev.db
+prisma/prisma/dev.db
+public/uploads/*
+!public/uploads/.keep
+.env
+.env.local
+.env.docker
