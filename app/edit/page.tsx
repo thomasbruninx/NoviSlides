@@ -1,7 +1,5 @@
-import nextDynamic from 'next/dynamic';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
-
-const EditorShell = nextDynamic(() => import('@/components/editor/EditorShell'), { ssr: false });
+import EditorShell from '@/components/editor/EditorShell';
 
 export default function EditPage() {
   return (

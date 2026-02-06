@@ -3,8 +3,9 @@ import ViewerEmpty from '@/components/viewer/ViewerEmpty';
 import { prisma } from '@/lib/db/prisma';
 import { toScreenDto, toSlideDto, toSlideElementDto, toSlideshowDto } from '@/lib/utils/serializers';
 
-export default async function SlideshowPage({ params }: { params: { slideshowId: string } }) {
-  const slideshow = await prisma.slideshow.findUnique({ where: { id: params.slideshowId } });
+export default async function SlideshowPage({ params }: { params: Promise<{ slideshowId: string }> }) {
+  const { slideshowId } = await params;
+  const slideshow = await prisma.slideshow.findUnique({ where: { id: slideshowId } });
 
   if (!slideshow) {
     return (

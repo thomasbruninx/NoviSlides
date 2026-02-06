@@ -3,7 +3,8 @@ import { SlideshowService } from '@/lib/services';
 import { updateSlideshowSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const service = new SlideshowService();
   const slideshow = await service.getSlideshowWithScreens(params.id);
   if (!slideshow) {
@@ -12,7 +13,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return ok(slideshow);
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = updateSlideshowSchema.parse(await request.json());
     const service = new SlideshowService();
@@ -27,7 +29,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new SlideshowService();
     const deleted = await service.deleteSlideshow(params.id);

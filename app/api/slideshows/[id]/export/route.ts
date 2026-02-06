@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { SlideshowTransferService } from '@/lib/services';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new SlideshowTransferService();
     const payload = await service.exportSlideshow(params.id);

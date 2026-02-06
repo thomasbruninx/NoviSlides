@@ -4,7 +4,8 @@ import { updateElementSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 import { toSlideElementDto } from '@/lib/utils/serializers';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = updateElementSchema.parse(await request.json());
     const service = new ElementService();
@@ -33,7 +34,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new ElementService();
     const deleted = await service.deleteElement(params.id);

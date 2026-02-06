@@ -19,9 +19,11 @@ export default async function HelpPage() {
         )}
 
         <Divider my="sm" />
-        <Button component={Link} href="/" size="md">
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <Button component="span" size="md">
             Return
-        </Button>
+          </Button>
+        </Link>
       </Stack>
     </Container>
   );

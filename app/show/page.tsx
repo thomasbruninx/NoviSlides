@@ -47,9 +47,11 @@ export default async function ShowPage() {
                       ? `Mounted: ${display.mountedSlideshow.name}`
                       : 'No slideshow mounted'}
                   </Text>
-                  <Button component={Link} href={`/display/${encodeURIComponent(display.name)}`} size="xs" variant="light">
-                    Open /display/{display.name}
-                  </Button>
+                  <Link href={`/display/${encodeURIComponent(display.name)}`} style={{ textDecoration: 'none' }}>
+                    <Button component="span" size="xs" variant="light">
+                      Open /display/{display.name}
+                    </Button>
+                  </Link>
                 </Stack>
               </Paper>
             ))}
@@ -65,18 +67,22 @@ export default async function ShowPage() {
                   <Text size="xs" c="dimmed">
                     {slideshow.id}
                   </Text>
-                  <Button component={Link} href={`/show/${slideshow.id}`} size="xs" variant="light">
-                    Open /show/{slideshow.id}
-                  </Button>
+                  <Link href={`/show/${slideshow.id}`} style={{ textDecoration: 'none' }}>
+                    <Button component="span" size="xs" variant="light">
+                      Open /show/{slideshow.id}
+                    </Button>
+                  </Link>
                 </Stack>
               </Paper>
             ))}
           </>
         ) : null}
         <Divider my="sm" />
-        <Button component={Link} href="/" size="md">
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <Button component="span" size="md">
             Return
-        </Button>
+          </Button>
+        </Link>
       </Stack>
     </Container>
   );

@@ -3,7 +3,8 @@ import { SlideService } from '@/lib/services';
 import { updateSlideSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = updateSlideSchema.parse(await request.json());
     const service = new SlideService();
@@ -33,7 +34,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new SlideService();
     const deleted = await service.deleteSlide(params.id);

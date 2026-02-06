@@ -90,11 +90,11 @@ export const createElementSchema = z.object({
   opacity: z.number().min(0).max(1).optional(),
   zIndex: z.number().int().optional(),
   animation: slideElementAnimationSchema.optional(),
-  dataJson: z.record(z.any())
+  dataJson: z.record(z.string(), z.any())
 });
 
 export const updateElementSchema = createElementSchema.partial().extend({
-  dataJson: z.record(z.any()).optional()
+  dataJson: z.record(z.string(), z.any()).optional()
 });
 
 export const reorderElementsSchema = z.object({
@@ -182,7 +182,7 @@ export const slideshowExportSchema = z.object({
               opacity: z.number().min(0).max(1).optional(),
               zIndex: z.number().int().optional(),
               animation: slideElementAnimationSchema.optional(),
-              dataJson: z.record(z.any())
+              dataJson: z.record(z.string(), z.any())
             })
           )
         })

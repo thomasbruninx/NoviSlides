@@ -1,7 +1,8 @@
 import { DisplayService } from '@/lib/services';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function POST(_: Request, { params }: { params: { id: string } }) {
+export async function POST(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new DisplayService();
     const result = await service.unmountSlideshow(params.id);

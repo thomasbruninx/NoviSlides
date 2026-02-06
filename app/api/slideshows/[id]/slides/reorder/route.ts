@@ -3,7 +3,8 @@ import { SlideService, SlideshowService } from '@/lib/services';
 import { reorderSlidesSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = reorderSlidesSchema.parse(await request.json());
     const slideshowService = new SlideshowService();

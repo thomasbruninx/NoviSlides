@@ -21,7 +21,8 @@ function getMimeType(filePath: string) {
   return mimeByExtension[ext] ?? 'application/octet-stream';
 }
 
-export async function GET(request: Request, { params }: { params: { path: string[] } }) {
+export async function GET(request: Request, context: { params: Promise<{ path: string[] }> }) {
+  const params = await context.params;
   try {
     const relativePath = params.path.join('/');
     const resolved = path.join(uploadRoot, relativePath.replace(/^[\\/]+/, ''));

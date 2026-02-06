@@ -4,7 +4,8 @@ import { mountSlideshowSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 import { toDisplayDto } from '@/lib/utils/serializers';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = mountSlideshowSchema.parse(await request.json());
     const service = new DisplayService();

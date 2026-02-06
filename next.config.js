@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    typedRoutes: false
-  },
+  typedRoutes: false,
   webpack: (config) => {
     config.resolve = config.resolve || {};
     config.resolve.fallback = {

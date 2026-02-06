@@ -9,7 +9,7 @@ export default function Transformers({
   transformerRef,
   selectedNode
 }: {
-  transformerRef: RefObject<Konva.Transformer>;
+  transformerRef: RefObject<Konva.Transformer | null>;
   selectedNode: Konva.Node | null;
 }) {
   useEffect(() => {

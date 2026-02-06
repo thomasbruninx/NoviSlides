@@ -2,7 +2,8 @@ import { fail, ok } from '@/lib/utils/respond';
 import { prisma } from '@/lib/db/prisma';
 import { toScreenDto, toSlideDto, toSlideElementDto, toSlideshowDto } from '@/lib/utils/serializers';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const slideshow = await prisma.slideshow.findUnique({ where: { id: params.id } });
     if (!slideshow) {

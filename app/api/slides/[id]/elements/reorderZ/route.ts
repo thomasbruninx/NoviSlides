@@ -3,7 +3,8 @@ import { ElementService } from '@/lib/services';
 import { reorderElementsSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = reorderElementsSchema.parse(await request.json());
     const service = new ElementService();

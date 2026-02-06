@@ -166,7 +166,7 @@ export default function ElementRenderer({
         event.target.stopDrag();
         return;
       }
-      event.target.setAttr('skipGridSnap', false);
+      (event.target as Konva.Node).setAttr('skipGridSnap', false);
       onDragStart?.(element.id);
     },
     onDragMove: (event: Konva.KonvaEventObject<DragEvent>) => {
@@ -178,8 +178,9 @@ export default function ElementRenderer({
       });
     },
     onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => {
-      const skipGridSnap = Boolean(event.target.getAttr('skipGridSnap'));
-      onCommit({ x: event.target.x(), y: event.target.y() }, { skipGridSnap });
+      const target = event.target as Konva.Node;
+      const skipGridSnap = Boolean(target.getAttr('skipGridSnap'));
+      onCommit({ x: target.x(), y: target.y() }, { skipGridSnap });
       onDragEnd?.(element.id);
     },
     onTransformEnd: (event: Konva.KonvaEventObject<Event>) => {

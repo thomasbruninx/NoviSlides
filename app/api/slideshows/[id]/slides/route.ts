@@ -5,7 +5,8 @@ import { toSlideDto, toSlideElementDto } from '@/lib/utils/serializers';
 import { createSlideSchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const slideshowService = new SlideshowService();
     const screen = await slideshowService.ensureDefaultScreen(params.id);
@@ -25,7 +26,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = createSlideSchema.parse(await request.json());
     const slideshowService = new SlideshowService();

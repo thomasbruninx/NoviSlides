@@ -4,7 +4,8 @@ import { updateDisplaySchema } from '@/lib/validation';
 import { fail, ok } from '@/lib/utils/respond';
 import { toDisplayDto } from '@/lib/utils/serializers';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const payload = updateDisplaySchema.parse(await request.json());
     const service = new DisplayService();
@@ -25,7 +26,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new DisplayService();
     const deleted = await service.deleteDisplay(params.id);

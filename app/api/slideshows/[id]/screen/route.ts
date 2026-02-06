@@ -2,7 +2,8 @@ import { SlideshowService } from '@/lib/services';
 import { fail, ok } from '@/lib/utils/respond';
 import { toScreenDto } from '@/lib/utils/serializers';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new SlideshowService();
     const screen = await service.ensureDefaultScreen(params.id);

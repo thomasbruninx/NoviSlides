@@ -2,10 +2,8 @@ import { IconService } from '@/lib/services';
 import { iconStyleSchema } from '@/lib/validation';
 import { fail } from '@/lib/utils/respond';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { style: string; name: string } }
-) {
+export async function GET(request: Request, context: { params: Promise<{ style: string; name: string }> }) {
+  const params = await context.params;
   try {
     const url = new URL(request.url);
     const color = url.searchParams.get('color') ?? undefined;

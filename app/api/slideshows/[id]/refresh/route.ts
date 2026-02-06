@@ -1,7 +1,8 @@
 import { ScreenRefreshService, SlideshowService } from '@/lib/services';
 import { fail, ok } from '@/lib/utils/respond';
 
-export async function POST(_: Request, { params }: { params: { id: string } }) {
+export async function POST(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const slideshowService = new SlideshowService();
     const screen = await slideshowService.ensureDefaultScreen(params.id);

@@ -2,7 +2,8 @@ import { SlideService } from '@/lib/services';
 import { fail, ok } from '@/lib/utils/respond';
 import { toSlideDto } from '@/lib/utils/serializers';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new SlideService();
     const created = await service.duplicateSlide(params.id);

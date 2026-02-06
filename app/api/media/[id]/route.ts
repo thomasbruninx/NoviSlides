@@ -2,7 +2,8 @@ import { MediaAssetInUseError, MediaService } from '@/lib/services';
 import { fail, ok } from '@/lib/utils/respond';
 import { toMediaAssetDto } from '@/lib/utils/serializers';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new MediaService();
     const asset = await service.getById(params.id);
@@ -16,7 +17,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   try {
     const service = new MediaService();
     const deleted = await service.deleteAsset(params.id);
