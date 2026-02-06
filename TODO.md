@@ -1,2 +1,3 @@
 - Add "Plug-in" system for custom elements
 - Add help content
+- Revise and improve templates (perhaps also make templates customizable by users)
