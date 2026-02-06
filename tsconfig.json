@@ -20,19 +20,18 @@
     "types": [
       "node"
     ],
-    "baseUrl": ".",
     "paths": {
       "@/app/*": [
-        "app/*"
+        "./app/*"
       ],
       "@/components/*": [
-        "components/*"
+        "./components/*"
       ],
       "@/lib/*": [
-        "lib/*"
+        "./lib/*"
       ],
       "@/tests/*": [
-        "tests/*"
+        "./tests/*"
       ]
     },
     "plugins": [
