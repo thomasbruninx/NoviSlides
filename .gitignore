@@ -8,3 +8,4 @@ public/uploads/*
 prisma/prisma/*
 prisma/dev.db
 .DS_Store
+next-env.d.ts
