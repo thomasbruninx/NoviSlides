@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import type { SlideDto, SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { getIconUrl } from '@/lib/utils/icons';
+import { resolveRenderableFontFamily } from '@/lib/utils/fonts';
 
 function getFragmentClass(animation?: string) {
   switch (animation) {
@@ -76,6 +77,7 @@ export default function SlideSection({
             const isBold = (data.bold as boolean | undefined) ?? false;
             const isItalic = (data.italic as boolean | undefined) ?? false;
             const isUnderline = (data.underline as boolean | undefined) ?? false;
+            const fontFamily = (data.fontFamily as string) ?? 'Segoe UI, Arial';
             const fragmentStyle: CSSProperties = {
               ...style,
               ...(fragmentClass && animationDurationMs !== undefined
@@ -89,6 +91,7 @@ export default function SlideSection({
               <div
                 key={element.id}
                 className={clsx('slide-element', 'label', fragmentClass && 'fragment', fragmentClass)}
+                data-element-id={element.id}
                 data-fragment-index={fragmentIndex}
                 style={fragmentStyle}
               >
@@ -97,12 +100,13 @@ export default function SlideSection({
                     ...contentStyle,
                     color: (data.color as string) ?? '#fff',
                     fontSize: (data.fontSize as number) ?? 32,
-                    fontFamily: (data.fontFamily as string) ?? 'Segoe UI, Arial',
+                    fontFamily: resolveRenderableFontFamily(fontFamily),
                     textAlign: (data.align as 'left' | 'center' | 'right') ?? 'left',
                     fontWeight: isBold ? '700' : '400',
                     fontStyle: isItalic ? 'italic' : 'normal',
                     textDecoration: isUnderline ? 'underline' : 'none',
-                    whiteSpace: 'pre-wrap'
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.2
                   }}
                 >
                   {data.text as string}
@@ -140,6 +144,7 @@ export default function SlideSection({
               <div
                 key={element.id}
                 className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
+                data-element-id={element.id}
                 data-fragment-index={fragmentIndex}
                 style={fragmentStyle}
               >
@@ -165,6 +170,7 @@ export default function SlideSection({
               <div
                 key={element.id}
                 className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
+                data-element-id={element.id}
                 data-fragment-index={fragmentIndex}
                 style={fragmentStyle}
               >
@@ -213,6 +219,7 @@ export default function SlideSection({
             <div
               key={element.id}
               className={clsx('slide-element', fragmentClass && 'fragment', fragmentClass)}
+              data-element-id={element.id}
               data-fragment-index={fragmentIndex}
               style={fragmentStyle}
             >

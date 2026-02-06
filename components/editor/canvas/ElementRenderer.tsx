@@ -7,7 +7,7 @@ import type Konva from 'konva';
 import type { SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { getIconUrl } from '@/lib/utils/icons';
-import { buildFontSpec, isSystemFont } from '@/lib/utils/fonts';
+import { buildFontSpec, isSystemFont, resolveRenderableFontFamily } from '@/lib/utils/fonts';
 
 export default function ElementRenderer({
   element,
@@ -136,6 +136,7 @@ export default function ElementRenderer({
   }, [element.type, element.dataJson]);
 
   const commonProps = {
+    id: element.id,
     x: element.x,
     y: element.y,
     width: element.width,
@@ -221,6 +222,7 @@ export default function ElementRenderer({
 
   if (element.type === 'label') {
     const data = element.dataJson as Record<string, unknown>;
+    const fontFamily = (data.fontFamily as string) ?? 'Segoe UI, Arial';
     const fontStyleParts: string[] = [];
     if ((data.bold as boolean | undefined) ?? false) {
       fontStyleParts.push('bold');
@@ -236,11 +238,14 @@ export default function ElementRenderer({
         {...commonProps}
         text={(data.text as string) ?? 'Label'}
         fontSize={(data.fontSize as number) ?? 32}
-        fontFamily={(data.fontFamily as string) ?? 'Segoe UI, Arial'}
+        fontFamily={resolveRenderableFontFamily(fontFamily)}
         fontStyle={fontStyle}
         textDecoration={textDecoration}
         fill={(data.color as string) ?? '#ffffff'}
         align={(data.align as 'left' | 'center' | 'right') ?? 'left'}
+        verticalAlign="top"
+        lineHeight={1.2}
+        padding={0}
         stroke={isSelected ? '#54b3ff' : undefined}
         strokeWidth={isSelected ? 1 : 0}
       />

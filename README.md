@@ -114,6 +114,7 @@ Notes:
 - Media uploads are persisted in Docker volume `novislides_uploads` mounted at `/app/public/uploads`.
 - On startup, the container runs `prisma migrate deploy` automatically before starting Next.js.
 - Default editor password follows `DEFAULT_PASSWORD` (fallback `password`) until changed in settings.
+- When using Playwright tests, ensure `E2E_EDITOR_PASSWORD` in `.env` matches the test configuration.
 
 ## Using the Editor
 - Open `http://localhost:3000/edit`

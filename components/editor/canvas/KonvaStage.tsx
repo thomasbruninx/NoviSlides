@@ -493,6 +493,15 @@ export default function KonvaStage({
     };
   }, [ensureFontsAndRefresh, refreshLabelMetrics, slide?.id]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    (window as Window & { __NOVI_EDITOR_STAGE__?: Konva.Stage | null }).__NOVI_EDITOR_STAGE__ =
+      stageRef.current;
+    return () => {
+      (window as Window & { __NOVI_EDITOR_STAGE__?: Konva.Stage | null }).__NOVI_EDITOR_STAGE__ = null;
+    };
+  }, []);
+
   return (
     <div
       ref={ref}
@@ -514,6 +523,40 @@ export default function KonvaStage({
           transform: `translate(-50%, -50%) translate(${panOffset.x}px, ${panOffset.y}px)`
         }}
       >
+        <div
+          data-editor-parity-root="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            opacity: 0,
+            zIndex: 1
+          }}
+        >
+          <div
+            data-editor-parity-slide="true"
+            style={{
+              position: 'absolute',
+              left: contentOffset.x * scale,
+              top: contentOffset.y * scale,
+              width: screen.width * scale,
+              height: screen.height * scale
+            }}
+          />
+          {(slide?.elements ?? []).map((element) => (
+            <div
+              key={`parity-${element.id}`}
+              data-editor-parity-element-id={element.id}
+              style={{
+                position: 'absolute',
+                left: (contentOffset.x + element.x) * scale,
+                top: (contentOffset.y + element.y) * scale,
+                width: element.width * scale,
+                height: element.height * scale
+              }}
+            />
+          ))}
+        </div>
         <Stage
           ref={stageRef}
           width={stageWidth}

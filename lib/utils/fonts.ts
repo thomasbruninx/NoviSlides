@@ -21,3 +21,13 @@ export const buildFontSpec = (
   const escaped = primary.replace(/'/g, "\\'");
   return `${italic ? 'italic' : 'normal'} ${fontWeight} ${fontSize}px '${escaped}'`;
 };
+
+export const resolveRenderableFontFamily = (fontFamily: string) => {
+  const primary = normalizeFont(fontFamily);
+  if (!primary) return 'sans-serif';
+  if (isSystemFont(primary)) {
+    return primary;
+  }
+  const escaped = primary.replace(/'/g, "\\'");
+  return `'${escaped}', sans-serif`;
+};

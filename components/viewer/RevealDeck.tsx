@@ -160,6 +160,10 @@ export default function RevealDeck({
   const latestConfigRef = useRef({
     width: screen.width,
     height: screen.height,
+    margin: 0,
+    minScale: 1,
+    maxScale: 1,
+    center: false,
     autoSlide: slideshow.defaultAutoSlideMs,
     transition: slideshow.revealTransition,
     loop: slideshow.loop,
@@ -170,6 +174,10 @@ export default function RevealDeck({
     latestConfigRef.current = {
       width: screen.width,
       height: screen.height,
+      margin: 0,
+      minScale: 1,
+      maxScale: 1,
+      center: false,
       autoSlide: slideshow.defaultAutoSlideMs,
       transition: slideshow.revealTransition,
       loop: slideshow.loop,
@@ -196,6 +204,10 @@ export default function RevealDeck({
         embedded: true,
         width: initialConfig.width,
         height: initialConfig.height,
+        margin: initialConfig.margin,
+        minScale: initialConfig.minScale,
+        maxScale: initialConfig.maxScale,
+        center: initialConfig.center,
         autoSlide: initialConfig.autoSlide,
         transition: initialConfig.transition,
         loop: initialConfig.loop,
@@ -205,7 +217,7 @@ export default function RevealDeck({
         slideNumber: false,
         keyboard: true,
         touch: true
-      });
+      } as unknown as Record<string, unknown>);
       revealRef.current = deck;
       deck
         .initialize()
@@ -216,12 +228,16 @@ export default function RevealDeck({
           deck.configure({
             width: config.width,
             height: config.height,
+            margin: config.margin,
+            minScale: config.minScale,
+            maxScale: config.maxScale,
+            center: config.center,
             autoSlide: config.autoSlide,
             transition: config.transition,
             loop: config.loop,
             controls: config.controls,
             autoSlideStoppable: config.autoSlideStoppable
-          });
+          } as unknown as Record<string, unknown>);
           deck.sync();
           deck.layout();
         })
@@ -233,12 +249,16 @@ export default function RevealDeck({
       revealRef.current.configure({
         width: config.width,
         height: config.height,
+        margin: config.margin,
+        minScale: config.minScale,
+        maxScale: config.maxScale,
+        center: config.center,
         autoSlide: config.autoSlide,
         transition: config.transition,
         loop: config.loop,
         controls: config.controls,
         autoSlideStoppable: config.autoSlideStoppable
-      });
+      } as unknown as Record<string, unknown>);
       revealRef.current.sync();
       revealRef.current.layout();
     }
