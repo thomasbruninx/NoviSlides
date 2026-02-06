@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "node scripts/start-next.cjs",
     "lint": "eslint app components lib tests *.js *.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

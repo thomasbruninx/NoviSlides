@@ -1,4 +1,5 @@
 import LiveRevealDeck from '@/components/viewer/LiveRevealDeck';
+import LiveDisplayEmpty from '@/components/viewer/LiveDisplayEmpty';
 import ViewerEmpty from '@/components/viewer/ViewerEmpty';
 import { prisma } from '@/lib/db/prisma';
 import { toScreenDto, toSlideDto, toSlideElementDto, toSlideshowDto } from '@/lib/utils/serializers';
@@ -18,7 +19,8 @@ export default async function DisplayPage({ params }: { params: Promise<{ name: 
 
   if (!display.mountedSlideshowId) {
     return (
-      <ViewerEmpty
+      <LiveDisplayEmpty
+        displayName={display.name}
         title="No slideshow mounted"
         description="Mount a slideshow to this display from the editor settings."
       />
@@ -28,7 +30,8 @@ export default async function DisplayPage({ params }: { params: Promise<{ name: 
   const slideshow = await prisma.slideshow.findUnique({ where: { id: display.mountedSlideshowId } });
   if (!slideshow) {
     return (
-      <ViewerEmpty
+      <LiveDisplayEmpty
+        displayName={display.name}
         title="Mounted slideshow missing"
         description="The slideshow mounted to this display no longer exists."
       />
@@ -47,7 +50,8 @@ export default async function DisplayPage({ params }: { params: Promise<{ name: 
 
   if (!screen) {
     return (
-      <ViewerEmpty
+      <LiveDisplayEmpty
+        displayName={display.name}
         title="Missing default screen"
         description="This slideshow has no screen for its default key."
       />
