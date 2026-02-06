@@ -7,3 +7,4 @@ public/uploads/*
 !public/assets/*
 prisma/prisma/*
 prisma/dev.db
+.DS_Store

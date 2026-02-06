@@ -1,6 +1,9 @@
 import './globals.css';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@fontsource/noto-sans/400.css';
+import '@fontsource/noto-sans/500.css';
+import '@fontsource/noto-sans/700.css';
 
 import type { ReactNode } from 'react';
 import { ColorSchemeScript } from '@mantine/core';

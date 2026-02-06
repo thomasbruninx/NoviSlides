@@ -16,13 +16,13 @@ html,
 body {
   padding: 0;
   margin: 0;
-  height: 100%;
+  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
 }
 
 body {
-  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-family: "Noto Sans", sans-serif;
 }
 
 a {

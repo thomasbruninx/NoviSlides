@@ -23,8 +23,8 @@ export default function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <MantineProvider
         theme={{
-          fontFamily: '"Plus Jakarta Sans", "Segoe UI", Arial, sans-serif',
-          headings: { fontFamily: '"Space Grotesk", "Segoe UI", Arial, sans-serif' }
+          fontFamily: '"Noto Sans", sans-serif',
+          headings: { fontFamily: '"Noto Sans", sans-serif' }
         }}
         defaultColorScheme="dark"
       >

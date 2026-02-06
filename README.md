@@ -1,3 +1,5 @@
+![NoviSlides Logo](./public/assets/NoviSlides.png)
+
 # NoviSlides
 
 A lightweight digital signage content provider, built as a full-stack web application using Next.js, Mantine, Reveal.js, Konva, and SQLite (Prisma).
@@ -142,3 +144,6 @@ Video playback notes:
 
 ## Disclaimer on the use of AI
 This project has been developed with the assistance of AI tools (notably GitHub Copilot and ChatGPT Codex) to help speed up development and provide code suggestions. While these tools can be helpful, they may also introduce code that is suboptimal, insecure, or incorrect. Which I experienced firsthand while reviewing and debugging the generated code. I don't blindly trust AI-generated code, and neither should you. Always review, test, and validate any code produced with the help of AI tools.
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details

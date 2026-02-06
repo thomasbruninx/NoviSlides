@@ -2,7 +2,7 @@
 title: Configuring Your Displays
 summary: Guide on configuring common displays
 icon: tv
-order: 100
+order: 20
 ```
 
 ## Configuring Your Displays

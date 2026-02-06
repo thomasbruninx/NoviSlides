@@ -24,9 +24,9 @@ export default function HomePage() {
             View Help
           </Button>
         </Group>
-        <Divider my="sm"/>
+        <Divider/>
         <Text c="dimmed">
-          Copyright &copy; 2026 Thomas Bruninx. All rights reserved.
+          NoviSlides &copy; 2026 Thomas Bruninx. All rights reserved.
         </Text>
       </Stack>
     </Container>

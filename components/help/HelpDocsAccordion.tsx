@@ -18,7 +18,7 @@ import { getIconUrl } from '@/lib/utils/icons';
 
 export default function HelpDocsAccordion({ docs }: { docs: HelpDoc[] }) {
   return (
-    <Accordion defaultValue={docs[0]?.slug ?? null} variant="separated" radius="md">
+    <Accordion defaultValue={null} variant="separated" radius="md">
       {docs.map((doc) => (
         <AccordionItem key={doc.slug} value={doc.slug}>
           <AccordionControl>
