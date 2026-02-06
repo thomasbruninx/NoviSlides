@@ -1,4 +1,4 @@
-import type { Slideshow, Screen, Slide, SlideElement, MediaAsset, Display } from '@prisma/client';
+import type { Slideshow, Screen, Slide, SlideElement, MediaAsset, Display, TenantSettings } from '@prisma/client';
 import type {
   SlideshowDto,
   ScreenDto,
@@ -6,6 +6,7 @@ import type {
   SlideElementDto,
   MediaAssetDto,
   DisplayDto,
+  TenantSettingsDto,
   SlideElementAnimation,
   SlideElementType
 } from '../types';
@@ -98,5 +99,17 @@ export function toDisplayDto(display: Display): DisplayDto {
     ...display,
     createdAt: display.createdAt.toISOString(),
     updatedAt: display.updatedAt.toISOString()
+  };
+}
+
+export function toTenantSettingsDto(
+  settings: TenantSettings,
+  googleFontsApiKeyManagedByEnv = false
+): TenantSettingsDto {
+  return {
+    googleFontsApiKey: settings.googleFontsApiKey,
+    googleFontsApiKeyManagedByEnv,
+    createdAt: settings.createdAt.toISOString(),
+    updatedAt: settings.updatedAt.toISOString()
   };
 }

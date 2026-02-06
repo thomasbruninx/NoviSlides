@@ -6,3 +6,4 @@ export * from './MediaRepository';
 export * from './DisplayRepository';
 export * from './EditorAuthRepository';
 export * from './EditorSessionRepository';
+export * from './TenantSettingsRepository';

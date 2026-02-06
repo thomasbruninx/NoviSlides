@@ -224,7 +224,7 @@ export default function ElementPropsPanel({
           />
           {!googleFontsAvailable ? (
             <Text size="xs" c="dimmed">
-              Google Fonts unavailable. Set `GOOGLE_FONTS_API_KEY` on the server to enable full list.
+              Google Fonts unavailable. Add a Google Fonts API key in Settings to enable the full list.
             </Text>
           ) : null}
           <ColorInput label="Color" value={(data.color as string) ?? '#ffffff'} onChange={(val) => updateData({ color: val })} />

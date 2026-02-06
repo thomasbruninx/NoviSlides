@@ -11,3 +11,4 @@ export * from './IconService';
 export * from './SlideshowTransferService';
 export * from './DocsService';
 export * from './AuthService';
+export * from './TenantSettingsService';

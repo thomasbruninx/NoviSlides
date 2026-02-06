@@ -133,6 +133,13 @@ export type DisplayDto = {
   updatedAt: string;
 };
 
+export type TenantSettingsDto = {
+  googleFontsApiKey: string | null;
+  googleFontsApiKeyManagedByEnv: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ScreenDeckDto = {
   slideshow: SlideshowDto;
   screen: ScreenDto;

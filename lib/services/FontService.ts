@@ -1,3 +1,5 @@
+import { TenantSettingsService } from './TenantSettingsService';
+
 type FontListResult = {
   items: string[];
   hasGoogleFonts: boolean;
@@ -6,6 +8,7 @@ type FontListResult = {
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 let cachedFonts: string[] = [];
 let cachedAt = 0;
+let cachedForKey: string | null = null;
 let inflight: Promise<string[]> | null = null;
 
 async function fetchGoogleFonts(key: string): Promise<string[]> {
@@ -24,13 +27,19 @@ async function fetchGoogleFonts(key: string): Promise<string[]> {
     .filter((family): family is string => Boolean(family));
 }
 
-async function getFontCache(): Promise<string[]> {
+async function getFontCache(key: string | null): Promise<string[]> {
   const now = Date.now();
+  if (cachedForKey !== key) {
+    cachedFonts = [];
+    cachedAt = 0;
+    cachedForKey = key;
+    inflight = null;
+  }
+
   if (cachedFonts.length && now - cachedAt < CACHE_TTL_MS) {
     return cachedFonts;
   }
 
-  const key = process.env.GOOGLE_FONTS_API_KEY;
   if (!key) {
     cachedFonts = [];
     cachedAt = now;
@@ -53,10 +62,14 @@ async function getFontCache(): Promise<string[]> {
 }
 
 export class FontService {
+  private tenantSettingsService = new TenantSettingsService();
+
   async listFonts(query: string, limit: number): Promise<FontListResult> {
     const trimmed = query.trim().toLowerCase();
     const safeLimit = Math.min(100, Math.max(1, limit || 30));
-    const fonts = await getFontCache();
+    const tenantKey = await this.tenantSettingsService.getGoogleFontsApiKey();
+    const key = tenantKey ?? process.env.GOOGLE_FONTS_API_KEY ?? null;
+    const fonts = await getFontCache(key);
     if (!fonts.length) {
       return { items: [], hasGoogleFonts: false };
     }

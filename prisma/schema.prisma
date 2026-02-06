@@ -109,6 +109,13 @@ model Display {
   mountedSlideshow Slideshow? @relation(fields: [mountedSlideshowId], references: [id], onDelete: SetNull)
 }
 
+model TenantSettings {
+  id                 String   @id @default("default")
+  googleFontsApiKey  String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
 model EditorAuth {
   id           String   @id @default("default")
   passwordHash String

@@ -243,3 +243,7 @@ export const updateEditorPasswordSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword']
   });
+
+export const updateTenantSettingsSchema = z.object({
+  googleFontsApiKey: z.string().max(500).optional().nullable()
+});

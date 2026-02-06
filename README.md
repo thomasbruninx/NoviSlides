@@ -10,7 +10,7 @@ A lightweight digital signage content provider, built as a full-stack web applic
 - WYSIWYG editor with drag/drop, resize, layers, ...
 - Slides with text, images, videos, shapes, and more
 - Animations and transitions via Reveal.js
-- Use Google Fonts in text elements (if free API key provided)
+- Use Google Fonts in text elements (with API key configured in Settings)
 - Use Google Material Icons in icon elements
 - Media Library with image + video assets
 - Locked slide resolution (default 1920 x 540)
@@ -33,10 +33,11 @@ create a `.env` file in the root with the following content:
 DATABASE_URL="file:./prisma/dev.db"
 ```
 
-Optional (for Google Fonts dropdown in the editor):
+Optional startup override:
 ```
 GOOGLE_FONTS_API_KEY="your-google-fonts-api-key"
 ```
+When set at startup, this key is synced to tenant settings and the Google Fonts key field is hidden in the editor settings for that running process.
 
 Optional (initial editor password):
 ```
@@ -62,6 +63,7 @@ Important: SSE doesn't work in development mode, live refresh of the viewer fall
 - Default password is read from `DEFAULT_PASSWORD`.
 - If `DEFAULT_PASSWORD` is not set, fallback is `password`.
 - Use **Settings -> Editor Authentication** inside the editor to change it immediately.
+- Use **Settings -> Google Fonts** inside the editor to configure or change the Google Fonts API key.
 - Enable **Remember me** on login to keep access for 30 days via a secure HTTP-only cookie.
 - Set `EDITOR_AUTH_COOKIE_SECURE=true` when serving over HTTPS.
 
@@ -91,7 +93,7 @@ cp .env.docker.example .env.docker
 2. Adjust values in `.env.docker`
 - `NOVISLIDES_PORT` external host port
 - `DATABASE_URL` SQLite file path inside the container (default: `file:/data/dev.db`)
-- `GOOGLE_FONTS_API_KEY` optional
+- `GOOGLE_FONTS_API_KEY` optional fallback (Settings value has priority)
 - `EDITOR_AUTH_COOKIE_SECURE` set to `true` only when served over HTTPS
 - `DEFAULT_PASSWORD` initial editor password fallback (`password` if omitted)
 

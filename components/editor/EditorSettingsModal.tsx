@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { DisplayDto } from '@/lib/types';
+import type { DisplayDto, TenantSettingsDto } from '@/lib/types';
 import { apiFetch } from '@/lib/utils/api';
 
 const DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
@@ -40,6 +40,7 @@ export default function EditorSettingsModal({
   const [origin, setOrigin] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [googleFontsApiKey, setGoogleFontsApiKey] = useState('');
   const [formState, setFormState] = useState<DisplayFormState>({
     name: '',
     width: 1920,
@@ -52,12 +53,22 @@ export default function EditorSettingsModal({
     enabled: opened
   });
 
+  const tenantSettingsQuery = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => apiFetch<TenantSettingsDto>('/api/settings'),
+    enabled: opened
+  });
+
   useEffect(() => {
     if (!opened) {
       setFormOpened(false);
       setFormState({ name: '', width: 1920, height: 540 });
     }
   }, [opened]);
+
+  useEffect(() => {
+    setGoogleFontsApiKey(tenantSettingsQuery.data?.googleFontsApiKey ?? '');
+  }, [tenantSettingsQuery.data?.googleFontsApiKey]);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -123,6 +134,21 @@ export default function EditorSettingsModal({
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
 
+  const updateTenantSettingsMutation = useMutation({
+    mutationFn: (payload: { googleFontsApiKey: string | null }) =>
+      apiFetch<TenantSettingsDto>('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      }),
+    onSuccess: (updated) => {
+      setGoogleFontsApiKey(updated.googleFontsApiKey ?? '');
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.invalidateQueries({ queryKey: ['fonts'] });
+      notifications.show({ color: 'green', message: 'Settings updated' });
+    },
+    onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
+  });
+
   const openCreateForm = () => {
     setFormState({ name: '', width: 1920, height: 540 });
     setFormOpened(true);
@@ -172,6 +198,10 @@ export default function EditorSettingsModal({
   const isPasswordValid = newPassword.length >= 6;
   const doPasswordsMatch = newPassword === confirmPassword;
   const canUpdatePassword = isPasswordValid && doPasswordsMatch;
+  const normalizedGoogleFontsApiKey = googleFontsApiKey.trim();
+  const savedGoogleFontsApiKey = tenantSettingsQuery.data?.googleFontsApiKey ?? '';
+  const googleFontsApiKeyManagedByEnv = tenantSettingsQuery.data?.googleFontsApiKeyManagedByEnv ?? false;
+  const hasGoogleFontsKeyChanges = normalizedGoogleFontsApiKey !== savedGoogleFontsApiKey;
 
   return (
     <>
@@ -224,6 +254,35 @@ export default function EditorSettingsModal({
               ) : null}
             </Stack>
           </ScrollArea>
+          {!googleFontsApiKeyManagedByEnv ? (
+            <Paper withBorder p="sm" radius="md">
+              <Stack gap="xs">
+                <Text fw={600} size="sm">
+                  Google Fonts
+                </Text>
+                <TextInput
+                  label="Google Fonts API key"
+                  value={googleFontsApiKey}
+                  onChange={(event) => setGoogleFontsApiKey(event.currentTarget.value)}
+                  description="Used to fetch the Google Fonts list in the editor."
+                  placeholder="AIza..."
+                />
+                <Group justify="flex-end">
+                  <Button
+                    onClick={() =>
+                      updateTenantSettingsMutation.mutate({
+                        googleFontsApiKey: normalizedGoogleFontsApiKey || null
+                      })
+                    }
+                    disabled={!hasGoogleFontsKeyChanges}
+                    loading={updateTenantSettingsMutation.isPending}
+                  >
+                    Save Google Fonts key
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
+          ) : null}
           <Paper withBorder p="sm" radius="md">
             <Stack gap="xs">
               <Text fw={600} size="sm">
