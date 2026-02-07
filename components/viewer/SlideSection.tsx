@@ -242,14 +242,16 @@ export default function SlideSection({
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
-                    <img
-                      src={path}
-                      alt={(data.originalName as string | undefined) ?? ''}
+                    <div
+                      role="img"
+                      aria-label={(data.originalName as string | undefined) ?? 'Image'}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: imageObjectFit,
-                        objectPosition: imageObjectPosition
+                        backgroundImage: `url("${path}")`,
+                        backgroundSize: imageObjectFit === 'none' ? 'auto' : imageObjectFit,
+                        backgroundPosition: imageObjectPosition,
+                        backgroundRepeat: 'no-repeat'
                       }}
                     />
                   )}
