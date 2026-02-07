@@ -14,9 +14,10 @@ import Transformers from './Transformers';
 export default function KonvaStage({
   screen,
   slide,
-  selectedElementId,
+  selectedElementIds,
   onSelectElement,
   onElementCommit,
+  onElementsCommit,
   zoom = 1,
   onZoomChange,
   panMode = false,
@@ -27,11 +28,15 @@ export default function KonvaStage({
 }: {
   screen: ScreenDto;
   slide: SlideDto | null;
-  selectedElementId: string | null;
-  onSelectElement: (id: string | null) => void;
+  selectedElementIds: string[];
+  onSelectElement: (id: string | null, options?: { append?: boolean }) => void;
   onElementCommit: (
     id: string,
     attrs: Partial<SlideElementDto>,
+    options?: { skipGridSnap?: boolean }
+  ) => void;
+  onElementsCommit?: (
+    updates: Array<{ id: string; attrs: Partial<SlideElementDto> }>,
     options?: { skipGridSnap?: boolean }
   ) => void;
   zoom?: number;
@@ -54,6 +59,10 @@ export default function KonvaStage({
   const isPanningRef = useRef(false);
   const lastPanPosRef = useRef<{ x: number; y: number } | null>(null);
   const [isMiddlePanning, setIsMiddlePanning] = useState(false);
+  const multiDragRef = useRef<{
+    activeId: string;
+    startById: Record<string, { x: number; y: number }>;
+  } | null>(null);
 
   const [backgroundImage] = useImage(slide?.backgroundImagePath ?? '');
 
@@ -122,7 +131,13 @@ export default function KonvaStage({
   }, [containerWidth, containerHeight, stageLogicalWidth, stageLogicalHeight]);
   const scale = baseScale * zoom;
 
-  const selectedNode = selectedElementId ? elementRefs.current[selectedElementId] : null;
+  const selectedNodes = useMemo(
+    () =>
+      selectedElementIds
+        .map((id) => elementRefs.current[id])
+        .filter((node): node is Konva.Node => Boolean(node)),
+    [selectedElementIds]
+  );
 
   const beginPan = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const evt = event.evt as MouseEvent;
@@ -166,7 +181,7 @@ export default function KonvaStage({
       return;
     }
     if (event.target === event.target.getStage()) {
-      onSelectElement(null);
+      onSelectElement(null, { append: false });
     }
   };
 
@@ -238,12 +253,27 @@ export default function KonvaStage({
     }
   }, [showGuides]);
 
-  const handleElementDragStart = useCallback(() => {
+  const handleElementDragStart = useCallback((id: string) => {
     clearGuides();
-  }, [clearGuides]);
+    if (!slide || selectedElementIds.length <= 1 || !selectedElementIds.includes(id)) {
+      multiDragRef.current = null;
+      return;
+    }
+    const startById: Record<string, { x: number; y: number }> = {};
+    (slide.elements ?? []).forEach((element) => {
+      if (selectedElementIds.includes(element.id)) {
+        startById[element.id] = { x: element.x, y: element.y };
+      }
+    });
+    multiDragRef.current = {
+      activeId: id,
+      startById
+    };
+  }, [clearGuides, selectedElementIds, slide]);
 
   const handleElementDragEnd = useCallback(() => {
     clearGuides();
+    multiDragRef.current = null;
   }, [clearGuides]);
 
   const handleElementDragMove = useCallback(
@@ -253,14 +283,69 @@ export default function KonvaStage({
       const { node, width, height, id } = payload;
       const x = node.x();
       const y = node.y();
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
+      const multiDrag = multiDragRef.current;
+      const isMultiDragActive =
+        Boolean(multiDrag) &&
+        multiDrag?.activeId === id &&
+        selectedElementIds.length > 1 &&
+        Boolean(multiDrag?.startById[id]);
+
+      let subjectX = x;
+      let subjectY = y;
+      let subjectWidth = width;
+      let subjectHeight = height;
+      let activeStartX = x;
+      let activeStartY = y;
+
+      if (isMultiDragActive && multiDrag) {
+        const activeStart = multiDrag.startById[id];
+        if (activeStart) {
+          activeStartX = activeStart.x;
+          activeStartY = activeStart.y;
+          const dx = x - activeStart.x;
+          const dy = y - activeStart.y;
+          const selectedSet = new Set(selectedElementIds);
+          const selectedElements = (slide.elements ?? []).filter((element) => selectedSet.has(element.id));
+          if (selectedElements.length) {
+            let minX = Number.POSITIVE_INFINITY;
+            let minY = Number.POSITIVE_INFINITY;
+            let maxX = Number.NEGATIVE_INFINITY;
+            let maxY = Number.NEGATIVE_INFINITY;
+
+            selectedElements.forEach((element) => {
+              const start = multiDrag.startById[element.id];
+              if (!start) return;
+              const nextX = start.x + dx;
+              const nextY = start.y + dy;
+              minX = Math.min(minX, nextX);
+              minY = Math.min(minY, nextY);
+              maxX = Math.max(maxX, nextX + element.width);
+              maxY = Math.max(maxY, nextY + element.height);
+            });
+
+            if (
+              Number.isFinite(minX) &&
+              Number.isFinite(minY) &&
+              Number.isFinite(maxX) &&
+              Number.isFinite(maxY)
+            ) {
+              subjectX = minX;
+              subjectY = minY;
+              subjectWidth = Math.max(10, maxX - minX);
+              subjectHeight = Math.max(10, maxY - minY);
+            }
+          }
+        }
+      }
+
+      const centerX = subjectX + subjectWidth / 2;
+      const centerY = subjectY + subjectHeight / 2;
       const slideCenterX = screen.width / 2;
       const slideCenterY = screen.height / 2;
 
       const nextGuides: Array<{ orientation: 'vertical' | 'horizontal'; position: number }> = [];
-      let snappedX = x;
-      let snappedY = y;
+      let snappedSubjectX = subjectX;
+      let snappedSubjectY = subjectY;
 
       const slideCenterDeltaX = Math.abs(centerX - slideCenterX);
       const slideCenterDeltaY = Math.abs(centerY - slideCenterY);
@@ -276,15 +361,17 @@ export default function KonvaStage({
 
       if (magneticGuides) {
         if (slideCenterDeltaX <= GUIDE_SNAP_DISTANCE) {
-          snappedX = x + (slideCenterX - centerX);
+          snappedSubjectX = subjectX + (slideCenterX - centerX);
         }
         if (slideCenterDeltaY <= GUIDE_SNAP_DISTANCE) {
-          snappedY = y + (slideCenterY - centerY);
+          snappedSubjectY = subjectY + (slideCenterY - centerY);
         }
       }
 
       if (!useSlideCenterX || !useSlideCenterY) {
-        const otherElements = (slide.elements ?? []).filter((element) => element.id !== id);
+        const otherElements = (slide.elements ?? []).filter((element) =>
+          isMultiDragActive ? !selectedElementIds.includes(element.id) : element.id !== id
+        );
         if (!useSlideCenterX) {
           let closestX = Number.POSITIVE_INFINITY;
           let closestXCenter: number | null = null;
@@ -301,7 +388,7 @@ export default function KonvaStage({
               nextGuides.push({ orientation: 'vertical', position: closestXCenter });
             }
             if (magneticGuides && closestX <= GUIDE_SNAP_DISTANCE) {
-              snappedX = x + (closestXCenter - centerX);
+              snappedSubjectX = subjectX + (closestXCenter - centerX);
             }
           }
         }
@@ -322,14 +409,23 @@ export default function KonvaStage({
               nextGuides.push({ orientation: 'horizontal', position: closestYCenter });
             }
             if (magneticGuides && closestY <= GUIDE_SNAP_DISTANCE) {
-              snappedY = y + (closestYCenter - centerY);
+              snappedSubjectY = subjectY + (closestYCenter - centerY);
             }
           }
         }
       }
 
-      if (magneticGuides && (snappedX !== x || snappedY !== y)) {
-        node.position({ x: snappedX, y: snappedY });
+      const nextNodeX =
+        isMultiDragActive && multiDrag
+          ? activeStartX + (x - activeStartX) + (snappedSubjectX - subjectX)
+          : snappedSubjectX;
+      const nextNodeY =
+        isMultiDragActive && multiDrag
+          ? activeStartY + (y - activeStartY) + (snappedSubjectY - subjectY)
+          : snappedSubjectY;
+
+      if (magneticGuides && (nextNodeX !== x || nextNodeY !== y)) {
+        node.position({ x: nextNodeX, y: nextNodeY });
         node.setAttr('skipGridSnap', true);
       } else {
         node.setAttr('skipGridSnap', false);
@@ -340,8 +436,31 @@ export default function KonvaStage({
       } else {
         setGuides([]);
       }
+
+      if (
+        multiDrag &&
+        multiDrag.activeId === id &&
+        selectedElementIds.length > 1 &&
+        multiDrag.startById[id]
+      ) {
+        const activeStart = multiDrag.startById[id];
+        const dx = node.x() - activeStart.x;
+        const dy = node.y() - activeStart.y;
+        selectedElementIds.forEach((selectedId) => {
+          if (selectedId === id) return;
+          const selectedNode = elementRefs.current[selectedId];
+          const selectedStart = multiDrag.startById[selectedId];
+          if (!selectedNode || !selectedStart) return;
+          selectedNode.position({
+            x: selectedStart.x + dx,
+            y: selectedStart.y + dy
+          });
+          selectedNode.setAttr('skipGridSnap', Boolean(node.getAttr('skipGridSnap')));
+        });
+        node.getLayer()?.batchDraw();
+      }
     },
-    [magneticGuides, screen.height, screen.width, showGuides, slide]
+    [magneticGuides, screen.height, screen.width, selectedElementIds, showGuides, slide]
   );
 
   const labelFonts = useMemo(
@@ -643,7 +762,7 @@ export default function KonvaStage({
                 <ElementRenderer
                   key={element.id}
                   element={element}
-                  isSelected={selectedElementId === element.id}
+                  isSelected={selectedElementIds.includes(element.id)}
                   registerRef={(node) => {
                     if (node) {
                       elementRefs.current[element.id] = node;
@@ -654,8 +773,39 @@ export default function KonvaStage({
                       }
                     }
                   }}
-                  onSelect={() => onSelectElement(element.id)}
-                  onCommit={(attrs, options) => onElementCommit(element.id, attrs, options)}
+                  onSelect={(options) => onSelectElement(element.id, options)}
+                  onCommit={(attrs, options) => {
+                    const multiDrag = multiDragRef.current;
+                    if (
+                      attrs.x !== undefined &&
+                      attrs.y !== undefined &&
+                      multiDrag &&
+                      multiDrag.activeId === element.id &&
+                      selectedElementIds.length > 1 &&
+                      onElementsCommit &&
+                      multiDrag.startById[element.id]
+                    ) {
+                      const activeStart = multiDrag.startById[element.id];
+                      const dx = attrs.x - activeStart.x;
+                      const dy = attrs.y - activeStart.y;
+                      const updates: Array<{ id: string; attrs: Partial<SlideElementDto> }> = [];
+                      selectedElementIds.forEach((selectedId) => {
+                        const start = multiDrag.startById[selectedId];
+                        if (!start) return;
+                        updates.push({
+                          id: selectedId,
+                          attrs: {
+                            x: start.x + dx,
+                            y: start.y + dy
+                          }
+                        });
+                      });
+                      onElementsCommit(updates, options);
+                      multiDragRef.current = null;
+                      return;
+                    }
+                    onElementCommit(element.id, attrs, options);
+                  }}
                   onDragStart={handleElementDragStart}
                   onDragMove={handleElementDragMove}
                   onDragEnd={handleElementDragEnd}
@@ -666,7 +816,7 @@ export default function KonvaStage({
               ))}
           </Layer>
           <Layer x={contentOffset.x} y={contentOffset.y}>
-            <Transformers transformerRef={transformerRef} selectedNode={selectedNode ?? null} />
+            <Transformers transformerRef={transformerRef} selectedNodes={selectedNodes} />
           </Layer>
           {showGuides && guides.length ? (
             <Layer

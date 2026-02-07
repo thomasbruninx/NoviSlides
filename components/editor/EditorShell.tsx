@@ -78,6 +78,7 @@ export default function EditorShell() {
   const [selectedScreenId, setSelectedScreenId] = useState<string | null>(null);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
   const [isDirty, setIsDirty] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGuides, setShowGuides] = useState(true);
@@ -159,7 +160,11 @@ export default function EditorShell() {
   const selectedSlideshow = slideshows.find((item) => item.id === selectedSlideshowId) ?? null;
   const selectedScreen = screen;
   const selectedSlide = slides.find((item) => item.id === selectedSlideId) ?? null;
-  const selectedElement = selectedSlide?.elements?.find((item) => item.id === selectedElementId) ?? null;
+  const selectedElement =
+    selectedSlide?.elements?.find((item) => item.id === selectedElementId) ??
+    (selectedElementIds.length
+      ? selectedSlide?.elements?.find((item) => item.id === selectedElementIds[0]) ?? null
+      : null);
 
   useEffect(() => {
     if (!selectedSlideshowId && slideshows.length) {
@@ -178,6 +183,14 @@ export default function EditorShell() {
       setSelectedSlideId(slides[0].id);
     }
   }, [selectedSlideId, slides]);
+
+  useEffect(() => {
+    const availableIds = new Set((selectedSlide?.elements ?? []).map((element) => element.id));
+    setSelectedElementIds((prev) => prev.filter((id) => availableIds.has(id)));
+    if (selectedElementId && !availableIds.has(selectedElementId)) {
+      setSelectedElementId(null);
+    }
+  }, [selectedElementId, selectedSlide?.elements]);
 
   useEffect(() => {
     const handler = (event: BeforeUnloadEvent) => {
@@ -430,7 +443,8 @@ export default function EditorShell() {
       undoStack.current = undoStack.current.filter((entry) => entry.id !== id);
       redoStack.current = redoStack.current.filter((entry) => entry.id !== id);
       queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
-      setSelectedElementId(null);
+      setSelectedElementIds((prev) => prev.filter((selectedId) => selectedId !== id));
+      setSelectedElementId((prev) => (prev === id ? null : prev));
       notifications.show({ color: 'green', message: 'Element deleted' });
     },
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
@@ -445,6 +459,7 @@ export default function EditorShell() {
     onSuccess: (element) => {
       queryClient.invalidateQueries({ queryKey: ['slides', selectedSlideshowId] });
       setSelectedElementId(element.id);
+      setSelectedElementIds([element.id]);
     },
     onError: (error: Error) => notifications.show({ color: 'red', message: error.message })
   });
@@ -794,7 +809,7 @@ export default function EditorShell() {
         return;
       }
       if (
-        selectedElement &&
+        selectedElementIds.length > 0 &&
         selectedScreen &&
         !event.ctrlKey &&
         !event.metaKey &&
@@ -811,42 +826,60 @@ export default function EditorShell() {
         if (event.key === 'ArrowLeft') deltaX = -1;
         if (event.key === 'ArrowRight') deltaX = 1;
 
-        const maxX = Math.max(0, selectedScreen.width - selectedElement.width);
-        const maxY = Math.max(0, selectedScreen.height - selectedElement.height);
-        const nextX = Math.min(maxX, Math.max(0, selectedElement.x + deltaX));
-        const nextY = Math.min(maxY, Math.max(0, selectedElement.y + deltaY));
+        const selectedElements = (selectedSlide?.elements ?? []).filter((element) =>
+          selectedElementIds.includes(element.id)
+        );
+        if (!selectedElements.length) {
+          event.preventDefault();
+          return;
+        }
 
-        if (nextX === selectedElement.x && nextY === selectedElement.y) {
+        const updates = selectedElements
+          .map((element) => {
+            const maxX = Math.max(0, selectedScreen.width - element.width);
+            const maxY = Math.max(0, selectedScreen.height - element.height);
+            const nextX = Math.min(maxX, Math.max(0, element.x + deltaX));
+            const nextY = Math.min(maxY, Math.max(0, element.y + deltaY));
+            if (nextX === element.x && nextY === element.y) return null;
+            return { element, nextX, nextY };
+          })
+          .filter((entry): entry is { element: SlideElementDto; nextX: number; nextY: number } => Boolean(entry));
+
+        if (!updates.length) {
           event.preventDefault();
           return;
         }
 
         event.preventDefault();
         if (!event.repeat) {
-          undoStack.current.push({
-            id: selectedElement.id,
-            prev: {
-              type: selectedElement.type,
-              x: selectedElement.x,
-              y: selectedElement.y,
-              width: selectedElement.width,
-              height: selectedElement.height,
-              rotation: selectedElement.rotation,
-              opacity: selectedElement.opacity,
-              zIndex: selectedElement.zIndex,
-              animation: selectedElement.animation,
-              dataJson: selectedElement.dataJson
-            }
+          updates.forEach(({ element }) => {
+            undoStack.current.push({
+              id: element.id,
+              prev: {
+                type: element.type,
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height,
+                rotation: element.rotation,
+                opacity: element.opacity,
+                zIndex: element.zIndex,
+                animation: element.animation,
+                dataJson: element.dataJson
+              }
+            });
           });
         }
         markDirty();
-        updateElementLocal(selectedElement.id, { x: nextX, y: nextY });
-        queueElementSave(selectedElement.id, { x: nextX, y: nextY });
+        updates.forEach(({ element, nextX, nextY }) => {
+          updateElementLocal(element.id, { x: nextX, y: nextY });
+          queueElementSave(element.id, { x: nextX, y: nextY });
+        });
         return;
       }
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementId) {
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedElementIds.length > 0) {
         event.preventDefault();
-        deleteElementMutation.mutate(selectedElementId);
+        selectedElementIds.forEach((id) => deleteElementMutation.mutate(id));
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
@@ -878,7 +911,7 @@ export default function EditorShell() {
     markDirty,
     queueElementSave,
     selectedElement,
-    selectedElementId,
+    selectedElementIds,
     selectedScreen,
     selectedSlide,
     selectedSlideId,
@@ -890,6 +923,7 @@ export default function EditorShell() {
     if (isDirty && !window.confirm('You have unsaved changes. Continue?')) return;
     setSelectedSlideId(id);
     setSelectedElementId(null);
+    setSelectedElementIds([]);
   };
 
   const handleSelectSlideshow = (id: string) => {
@@ -898,7 +932,35 @@ export default function EditorShell() {
     setSelectedScreenId(null);
     setSelectedSlideId(null);
     setSelectedElementId(null);
+    setSelectedElementIds([]);
   };
+
+  const handleSelectElement = useCallback((id: string | null, options?: { append?: boolean }) => {
+    if (!id) {
+      setSelectedElementId(null);
+      setSelectedElementIds([]);
+      return;
+    }
+
+    if (options?.append) {
+      setSelectedElementIds((prev) => {
+        if (prev.includes(id)) {
+          const next = prev.filter((selectedId) => selectedId !== id);
+          setSelectedElementId((current) => {
+            if (current !== id) return current;
+            return next[0] ?? null;
+          });
+          return next;
+        }
+        setSelectedElementId(id);
+        return [...prev, id];
+      });
+      return;
+    }
+
+    setSelectedElementId(id);
+    setSelectedElementIds([id]);
+  }, []);
 
   const handleSlideChange = (attrs: Partial<SlideDto>) => {
     if (!selectedSlide) return;
@@ -957,6 +1019,50 @@ export default function EditorShell() {
     updateElementLocal(id, sanitized);
     queueElementSave(id, sanitized);
   };
+
+  const handleElementsCommit = useCallback((
+    updates: Array<{ id: string; attrs: Partial<SlideElementDto> }>,
+    options?: { skipGridSnap?: boolean }
+  ) => {
+    if (!updates.length) return;
+    const currentById = new Map((selectedSlide?.elements ?? []).map((element) => [element.id, element]));
+    markDirty();
+    updates.forEach(({ id, attrs }) => {
+      let nextAttrs = attrs;
+      if (snapToGrid && !options?.skipGridSnap) {
+        const snap = (value?: number) =>
+          typeof value === 'number' ? Math.round(value / gridSize) * gridSize : value;
+        nextAttrs = {
+          ...nextAttrs,
+          x: snap(nextAttrs.x),
+          y: snap(nextAttrs.y),
+          width: snap(nextAttrs.width),
+          height: snap(nextAttrs.height)
+        };
+      }
+      const sanitized = stripUndefined(nextAttrs as Record<string, unknown>) as Partial<SlideElementDto>;
+      const currentElement = currentById.get(id);
+      if (currentElement) {
+        undoStack.current.push({
+          id,
+          prev: {
+            type: currentElement.type,
+            x: currentElement.x,
+            y: currentElement.y,
+            width: currentElement.width,
+            height: currentElement.height,
+            rotation: currentElement.rotation,
+            opacity: currentElement.opacity,
+            zIndex: currentElement.zIndex,
+            animation: currentElement.animation,
+            dataJson: currentElement.dataJson
+          }
+        });
+      }
+      updateElementLocal(id, sanitized);
+      queueElementSave(id, sanitized);
+    });
+  }, [gridSize, markDirty, queueElementSave, selectedSlide?.elements, snapToGrid, updateElementLocal]);
 
   const handleAddLabel = async () => {
     if (!selectedSlideId) return;
@@ -1178,9 +1284,9 @@ export default function EditorShell() {
   }, [createElementMutation, selectedElement, selectedSlide, selectedSlideId]);
 
   const handleDeleteSelected = useCallback(() => {
-    if (!selectedElementId) return;
-    deleteElementMutation.mutate(selectedElementId);
-  }, [deleteElementMutation, selectedElementId]);
+    if (!selectedElementIds.length) return;
+    selectedElementIds.forEach((id) => deleteElementMutation.mutate(id));
+  }, [deleteElementMutation, selectedElementIds]);
 
   const handleSlideshowChange = (attrs: Partial<SlideshowDto>) => {
     if (!selectedSlideshow) return;
@@ -1466,9 +1572,10 @@ export default function EditorShell() {
                 <KonvaStage
                   screen={selectedScreen}
                   slide={selectedSlide}
-                  selectedElementId={selectedElementId}
-                  onSelectElement={setSelectedElementId}
+                  selectedElementIds={selectedElementIds}
+                  onSelectElement={handleSelectElement}
                   onElementCommit={handleElementCommit}
+                  onElementsCommit={handleElementsCommit}
                   zoom={zoom}
                   onZoomChange={setZoom}
                   panMode={panMode}

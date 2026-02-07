@@ -7,26 +7,32 @@ import type Konva from 'konva';
 
 export default function Transformers({
   transformerRef,
-  selectedNode
+  selectedNodes
 }: {
   transformerRef: RefObject<Konva.Transformer | null>;
-  selectedNode: Konva.Node | null;
+  selectedNodes: Konva.Node[];
 }) {
   useEffect(() => {
     const transformer = transformerRef.current;
     if (!transformer) return;
-    if (selectedNode) {
-      transformer.nodes([selectedNode]);
+    if (selectedNodes.length) {
+      transformer.nodes(selectedNodes);
     } else {
       transformer.nodes([]);
     }
     transformer.getLayer()?.batchDraw();
-  }, [selectedNode, transformerRef]);
+  }, [selectedNodes, transformerRef]);
 
   return (
     <Transformer
       ref={transformerRef}
-      rotateEnabled
+      rotateEnabled={selectedNodes.length === 1}
+      resizeEnabled={selectedNodes.length === 1}
+      enabledAnchors={
+        selectedNodes.length === 1
+          ? ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
+          : []
+      }
       ignoreStroke
       boundBoxFunc={(oldBox, newBox) => {
         if (newBox.width < 10 || newBox.height < 10) {

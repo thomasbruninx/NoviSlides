@@ -26,7 +26,7 @@ export default function ElementRenderer({
   element: SlideElementDto;
   isSelected: boolean;
   registerRef: (node: Konva.Node | null) => void;
-  onSelect: () => void;
+  onSelect: (options?: { append: boolean }) => void;
   onCommit: (attrs: Partial<SlideElementDto>, options?: { skipGridSnap?: boolean }) => void;
   onDragStart?: (id: string) => void;
   onDragMove?: (payload: { id: string; node: Konva.Node; width: number; height: number }) => void;
@@ -148,7 +148,7 @@ export default function ElementRenderer({
     onClick: (event: Konva.KonvaEventObject<MouseEvent>) => {
       if (!canSelect) return;
       event.cancelBubble = true;
-      onSelect();
+      onSelect({ append: event.evt.ctrlKey || event.evt.metaKey });
     },
     onMouseDown: (event: Konva.KonvaEventObject<MouseEvent>) => {
       const evt = event.evt;
@@ -160,7 +160,7 @@ export default function ElementRenderer({
     onTap: (event: Konva.KonvaEventObject<TouchEvent>) => {
       if (!canSelect) return;
       event.cancelBubble = true;
-      onSelect();
+      onSelect({ append: false });
     },
     onDragStart: (event: Konva.KonvaEventObject<DragEvent>) => {
       const evt = event.evt as MouseEvent;
