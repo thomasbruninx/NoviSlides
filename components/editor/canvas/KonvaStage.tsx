@@ -59,9 +59,11 @@ export default function KonvaStage({
   const isPanningRef = useRef(false);
   const lastPanPosRef = useRef<{ x: number; y: number } | null>(null);
   const [isMiddlePanning, setIsMiddlePanning] = useState(false);
+  const lastGuidesRef = useRef<Array<{ orientation: 'vertical' | 'horizontal'; position: number }>>([]);
   const multiDragRef = useRef<{
     activeId: string;
     startById: Record<string, { x: number; y: number }>;
+    groupStart?: { x: number; y: number; width: number; height: number };
   } | null>(null);
 
   const [backgroundImage] = useImage(slide?.backgroundImagePath ?? '');
@@ -138,6 +140,7 @@ export default function KonvaStage({
         .filter((node): node is Konva.Node => Boolean(node)),
     [selectedElementIds]
   );
+  const selectedIdSet = useMemo(() => new Set(selectedElementIds), [selectedElementIds]);
 
   const beginPan = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const evt = event.evt as MouseEvent;
@@ -244,7 +247,24 @@ export default function KonvaStage({
   }, []);
 
   const clearGuides = useCallback(() => {
+    if (!lastGuidesRef.current.length) return;
+    lastGuidesRef.current = [];
     setGuides([]);
+  }, []);
+
+  const setGuidesIfChanged = useCallback((next: Array<{ orientation: 'vertical' | 'horizontal'; position: number }>) => {
+    const prev = lastGuidesRef.current;
+    if (
+      prev.length === next.length &&
+      prev.every(
+        (guide, index) =>
+          guide.orientation === next[index]?.orientation && guide.position === next[index]?.position
+      )
+    ) {
+      return;
+    }
+    lastGuidesRef.current = next;
+    setGuides(next);
   }, []);
 
   useEffect(() => {
@@ -265,9 +285,30 @@ export default function KonvaStage({
         startById[element.id] = { x: element.x, y: element.y };
       }
     });
+
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    (slide.elements ?? []).forEach((element) => {
+      const start = startById[element.id];
+      if (!start) return;
+      minX = Math.min(minX, start.x);
+      minY = Math.min(minY, start.y);
+      maxX = Math.max(maxX, start.x + element.width);
+      maxY = Math.max(maxY, start.y + element.height);
+    });
+
     multiDragRef.current = {
       activeId: id,
-      startById
+      startById,
+      groupStart:
+        Number.isFinite(minX) &&
+        Number.isFinite(minY) &&
+        Number.isFinite(maxX) &&
+        Number.isFinite(maxY)
+          ? { x: minX, y: minY, width: Math.max(10, maxX - minX), height: Math.max(10, maxY - minY) }
+          : undefined
     };
   }, [clearGuides, selectedElementIds, slide]);
 
@@ -304,36 +345,12 @@ export default function KonvaStage({
           activeStartY = activeStart.y;
           const dx = x - activeStart.x;
           const dy = y - activeStart.y;
-          const selectedSet = new Set(selectedElementIds);
-          const selectedElements = (slide.elements ?? []).filter((element) => selectedSet.has(element.id));
-          if (selectedElements.length) {
-            let minX = Number.POSITIVE_INFINITY;
-            let minY = Number.POSITIVE_INFINITY;
-            let maxX = Number.NEGATIVE_INFINITY;
-            let maxY = Number.NEGATIVE_INFINITY;
-
-            selectedElements.forEach((element) => {
-              const start = multiDrag.startById[element.id];
-              if (!start) return;
-              const nextX = start.x + dx;
-              const nextY = start.y + dy;
-              minX = Math.min(minX, nextX);
-              minY = Math.min(minY, nextY);
-              maxX = Math.max(maxX, nextX + element.width);
-              maxY = Math.max(maxY, nextY + element.height);
-            });
-
-            if (
-              Number.isFinite(minX) &&
-              Number.isFinite(minY) &&
-              Number.isFinite(maxX) &&
-              Number.isFinite(maxY)
-            ) {
-              subjectX = minX;
-              subjectY = minY;
-              subjectWidth = Math.max(10, maxX - minX);
-              subjectHeight = Math.max(10, maxY - minY);
-            }
+          const groupStart = multiDrag.groupStart;
+          if (groupStart) {
+            subjectX = groupStart.x + dx;
+            subjectY = groupStart.y + dy;
+            subjectWidth = groupStart.width;
+            subjectHeight = groupStart.height;
           }
         }
       }
@@ -370,7 +387,7 @@ export default function KonvaStage({
 
       if (!useSlideCenterX || !useSlideCenterY) {
         const otherElements = (slide.elements ?? []).filter((element) =>
-          isMultiDragActive ? !selectedElementIds.includes(element.id) : element.id !== id
+          isMultiDragActive ? !selectedIdSet.has(element.id) : element.id !== id
         );
         if (!useSlideCenterX) {
           let closestX = Number.POSITIVE_INFINITY;
@@ -432,9 +449,9 @@ export default function KonvaStage({
       }
 
       if (showGuides) {
-        setGuides(nextGuides);
+        setGuidesIfChanged(nextGuides);
       } else {
-        setGuides([]);
+        clearGuides();
       }
 
       if (
@@ -460,7 +477,7 @@ export default function KonvaStage({
         node.getLayer()?.batchDraw();
       }
     },
-    [magneticGuides, screen.height, screen.width, selectedElementIds, showGuides, slide]
+    [clearGuides, magneticGuides, screen.height, screen.width, selectedElementIds, selectedIdSet, setGuidesIfChanged, showGuides, slide]
   );
 
   const labelFonts = useMemo(
