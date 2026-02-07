@@ -5,6 +5,7 @@ import type { SlideDto, SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { getIconUrl } from '@/lib/utils/icons';
 import { resolveRenderableFontFamily } from '@/lib/utils/fonts';
+import { normalizeLineBreaks } from '@/lib/utils/text';
 
 function getFragmentClass(animation?: string) {
   switch (animation) {
@@ -109,7 +110,7 @@ export default function SlideSection({
                     lineHeight: 1.2
                   }}
                 >
-                  {data.text as string}
+                  {normalizeLineBreaks((data.text as string) ?? '')}
                 </div>
               </div>
             );

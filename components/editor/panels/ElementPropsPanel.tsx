@@ -2,13 +2,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Stack, Text, NumberInput, Select, TextInput, ColorInput, SegmentedControl, Switch, Group, Button, Box, Loader } from '@mantine/core';
+import { Stack, Text, NumberInput, Select, TextInput, Textarea, ColorInput, SegmentedControl, Switch, Group, Button, Box, Loader } from '@mantine/core';
 import type { SlideElementAnimation, SlideElementDto, SlideElementDataShape } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { apiFetch } from '@/lib/utils/api';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
 import { getIconUrl, iconStyles, type IconStyle } from '@/lib/utils/icons';
+import { normalizeLineBreaks } from '@/lib/utils/text';
 
 const animationOptions: Array<{ value: SlideElementAnimation; label: string }> = [
   { value: 'none', label: 'None' },
@@ -194,7 +195,14 @@ export default function ElementPropsPanel({
 
       {element.type === 'label' ? (
         <>
-          <TextInput label="Text" value={(data.text as string) ?? ''} onChange={(event) => updateData({ text: event.currentTarget.value })} />
+          <Textarea
+            label="Text"
+            value={(data.text as string) ?? ''}
+            onChange={(event) => updateData({ text: normalizeLineBreaks(event.currentTarget.value) })}
+            autosize
+            minRows={3}
+            maxRows={8}
+          />
           <NumberInput label="Font size" value={(data.fontSize as number) ?? 32} onChange={(val) => updateData({ fontSize: toNumber(val) })} />
           <Select
             label="Font"

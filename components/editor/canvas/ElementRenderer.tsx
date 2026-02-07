@@ -8,6 +8,7 @@ import type { SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { getIconUrl } from '@/lib/utils/icons';
 import { buildFontSpec, isSystemFont, resolveRenderableFontFamily } from '@/lib/utils/fonts';
+import { normalizeLineBreaks } from '@/lib/utils/text';
 
 export default function ElementRenderer({
   element,
@@ -236,7 +237,7 @@ export default function ElementRenderer({
       <Text
         ref={refCallback}
         {...commonProps}
-        text={(data.text as string) ?? 'Label'}
+        text={normalizeLineBreaks((data.text as string) ?? 'Label')}
         fontSize={(data.fontSize as number) ?? 32}
         fontFamily={resolveRenderableFontFamily(fontFamily)}
         fontStyle={fontStyle}
