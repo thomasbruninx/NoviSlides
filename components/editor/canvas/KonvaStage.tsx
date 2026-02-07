@@ -8,6 +8,7 @@ import type Konva from 'konva';
 import type { ScreenDto, SlideDto, SlideElementDto } from '@/lib/types';
 import { useGoogleFonts } from '@/lib/hooks/useGoogleFonts';
 import { buildFontSpec, isSystemFont } from '@/lib/utils/fonts';
+import { parseColorToRgb, relativeLuminance } from '@/lib/helpers/color';
 import ElementRenderer from './ElementRenderer';
 import Transformers from './Transformers';
 
@@ -141,6 +142,24 @@ export default function KonvaStage({
     [selectedElementIds]
   );
   const selectedIdSet = useMemo(() => new Set(selectedElementIds), [selectedElementIds]);
+  const gridStroke = useMemo(() => {
+    const rgb = parseColorToRgb(slide?.backgroundColor);
+    const luminance = rgb ? relativeLuminance(rgb) : null;
+    const lightThreshold = 0.5;
+    const midThreshold = 0.4;
+    const hasImageBackground = Boolean(slide?.backgroundImagePath);
+
+    if (rgb && rgb.r > 192) {
+      return hasImageBackground ? 'rgba(18,22,30,0.26)' : 'rgba(18,22,30,0.22)';
+    }
+    if (luminance !== null && luminance >= lightThreshold) {
+      return hasImageBackground ? 'rgba(18,22,30,0.26)' : 'rgba(18,22,30,0.22)';
+    }
+    if (luminance !== null && luminance >= midThreshold) {
+      return hasImageBackground ? 'rgba(18,22,30,0.2)' : 'rgba(18,22,30,0.16)';
+    }
+    return hasImageBackground ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.12)';
+  }, [slide?.backgroundColor, slide?.backgroundImagePath]);
 
   const beginPan = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const evt = event.evt as MouseEvent;
@@ -785,7 +804,7 @@ export default function KonvaStage({
                   <Line
                     key={`v-${x}`}
                     points={[x, 0, x, screen.height]}
-                    stroke="rgba(255,255,255,0.08)"
+                    stroke={gridStroke}
                     strokeWidth={1}
                   />
                 );
@@ -796,7 +815,7 @@ export default function KonvaStage({
                   <Line
                     key={`h-${y}`}
                     points={[0, y, screen.width, y]}
-                    stroke="rgba(255,255,255,0.08)"
+                    stroke={gridStroke}
                     strokeWidth={1}
                   />
                 );

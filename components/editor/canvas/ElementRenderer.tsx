@@ -4,11 +4,78 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Group, Rect, Text, Image as KonvaImage, Shape } from 'react-konva';
 import useImage from 'use-image';
 import type Konva from 'konva';
-import type { SlideElementDto } from '@/lib/types';
+import type { SlideBackgroundImagePosition, SlideBackgroundImageSize, SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { getIconUrl } from '@/lib/utils/icons';
 import { buildFontSpec, isSystemFont, resolveRenderableFontFamily } from '@/lib/utils/fonts';
 import { normalizeLineBreaks } from '@/lib/utils/text';
+
+const resolvePositionFactors = (value: string) => {
+  const [vertical, horizontal] = value.split('-') as [string | undefined, string | undefined];
+  const x = horizontal === 'left' ? 0 : horizontal === 'right' ? 1 : 0.5;
+  const y = vertical === 'top' ? 0 : vertical === 'bottom' ? 1 : 0.5;
+  return { x, y };
+};
+
+const computeImageDrawLayout = ({
+  imageWidth,
+  imageHeight,
+  frameWidth,
+  frameHeight,
+  size,
+  position
+}: {
+  imageWidth: number;
+  imageHeight: number;
+  frameWidth: number;
+  frameHeight: number;
+  size: SlideBackgroundImageSize;
+  position: SlideBackgroundImagePosition;
+}) => {
+  const safeImageWidth = Math.max(1, imageWidth);
+  const safeImageHeight = Math.max(1, imageHeight);
+  const safeFrameWidth = Math.max(1, frameWidth);
+  const safeFrameHeight = Math.max(1, frameHeight);
+  const factors = resolvePositionFactors(position);
+
+  if (size === 'cover') {
+    const scale = Math.max(safeFrameWidth / safeImageWidth, safeFrameHeight / safeImageHeight);
+    const sourceWidth = safeFrameWidth / scale;
+    const sourceHeight = safeFrameHeight / scale;
+    const cropX = Math.max(0, (safeImageWidth - sourceWidth) * factors.x);
+    const cropY = Math.max(0, (safeImageHeight - sourceHeight) * factors.y);
+    return {
+      x: 0,
+      y: 0,
+      width: safeFrameWidth,
+      height: safeFrameHeight,
+      crop: {
+        x: cropX,
+        y: cropY,
+        width: sourceWidth,
+        height: sourceHeight
+      }
+    };
+  }
+
+  if (size === 'contain') {
+    const scale = Math.min(safeFrameWidth / safeImageWidth, safeFrameHeight / safeImageHeight);
+    const width = safeImageWidth * scale;
+    const height = safeImageHeight * scale;
+    const x = (safeFrameWidth - width) * factors.x;
+    const y = (safeFrameHeight - height) * factors.y;
+    return { x, y, width, height };
+  }
+
+  const x = (safeFrameWidth - safeImageWidth) * factors.x;
+  const y = (safeFrameHeight - safeImageHeight) * factors.y;
+  return {
+    x,
+    y,
+    width: safeImageWidth,
+    height: safeImageHeight
+  };
+};
 
 export default function ElementRenderer({
   element,
@@ -350,13 +417,47 @@ export default function ElementRenderer({
     );
   }
 
+  const imageData = element.dataJson as Record<string, unknown>;
+  const imageSize = ((imageData.imageSize as SlideBackgroundImageSize | undefined) ?? 'cover');
+  const imagePosition = ((imageData.imagePosition as SlideBackgroundImagePosition | undefined) ?? 'center');
+  const sourceImageWidth = (image as HTMLImageElement | null)?.naturalWidth || image?.width || element.width;
+  const sourceImageHeight = (image as HTMLImageElement | null)?.naturalHeight || image?.height || element.height;
+  const imageDrawLayout = computeImageDrawLayout({
+    imageWidth: sourceImageWidth,
+    imageHeight: sourceImageHeight,
+    frameWidth: element.width,
+    frameHeight: element.height,
+    size: imageSize,
+    position: imagePosition
+  });
+
   return (
-    <KonvaImage
+    <Group
       ref={refCallback}
       {...commonProps}
-      image={image}
-      stroke={isSelected ? '#54b3ff' : undefined}
-      strokeWidth={isSelected ? 1 : 0}
-    />
+      clipX={0}
+      clipY={0}
+      clipWidth={element.width}
+      clipHeight={element.height}
+    >
+      <Rect width={element.width} height={element.height} fill="rgba(0,0,0,0.001)" />
+      <KonvaImage
+        image={image}
+        x={imageDrawLayout.x}
+        y={imageDrawLayout.y}
+        width={imageDrawLayout.width}
+        height={imageDrawLayout.height}
+        crop={imageDrawLayout.crop}
+      />
+      {isSelected ? (
+        <Rect
+          width={element.width}
+          height={element.height}
+          stroke="#54b3ff"
+          strokeWidth={1}
+          listening={false}
+        />
+      ) : null}
+    </Group>
   );
 }

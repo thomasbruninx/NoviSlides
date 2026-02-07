@@ -3,7 +3,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Stack, Text, NumberInput, Select, TextInput, Textarea, ColorInput, SegmentedControl, Switch, Group, Button, Box, Loader } from '@mantine/core';
-import type { SlideElementAnimation, SlideElementDto, SlideElementDataShape } from '@/lib/types';
+import type {
+  SlideBackgroundImagePosition,
+  SlideBackgroundImageSize,
+  SlideElementAnimation,
+  SlideElementDataShape,
+  SlideElementDto
+} from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { apiFetch } from '@/lib/utils/api';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
@@ -16,6 +22,22 @@ const animationOptions: Array<{ value: SlideElementAnimation; label: string }> =
   { value: 'fade', label: 'Fade' },
   { value: 'zoom', label: 'Zoom' },
   { value: 'appear', label: 'Appear' }
+];
+const imageSizeOptions: Array<{ value: SlideBackgroundImageSize; label: string }> = [
+  { value: 'cover', label: 'Cover' },
+  { value: 'contain', label: 'Contain' },
+  { value: 'center', label: 'Center' }
+];
+const imagePositionOptions: Array<{ value: SlideBackgroundImagePosition; label: string }> = [
+  { value: 'top-left', label: 'Top left' },
+  { value: 'top-center', label: 'Top center' },
+  { value: 'top-right', label: 'Top right' },
+  { value: 'center-left', label: 'Center left' },
+  { value: 'center', label: 'Center' },
+  { value: 'center-right', label: 'Center right' },
+  { value: 'bottom-left', label: 'Bottom left' },
+  { value: 'bottom-center', label: 'Bottom center' },
+  { value: 'bottom-right', label: 'Bottom right' }
 ];
 
 type FontOption = {
@@ -282,7 +304,7 @@ export default function ElementPropsPanel({
                   muted
                   playsInline
                   preload="metadata"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
                 />
               </Box>
             ) : null}
@@ -418,47 +440,78 @@ export default function ElementPropsPanel({
         </>
       ) : (
         <>
-          <Stack gap={6}>
-            <Text size="sm" fw={500}>
-              Image
-            </Text>
-            {(data.path as string) ? (
-              <Box
-                style={{
-                  width: '100%',
-                  aspectRatio: '16 / 9',
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  background: '#0b0f18',
-                  border: '1px solid #232a3b'
-                }}
-              >
-                <img
-                  src={resolveMediaPath(data.path as string)}
-                  alt="Image preview"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          {(() => {
+            const imageSize = ((data.imageSize as SlideBackgroundImageSize | undefined) ?? 'cover');
+            const imagePosition = ((data.imagePosition as SlideBackgroundImagePosition | undefined) ?? 'center');
+            const hasImage = Boolean(data.path as string);
+            return (
+              <>
+                <Select
+                  label="Image size"
+                  data={imageSizeOptions}
+                  value={imageSize}
+                  onChange={(value) => updateData({ imageSize: (value ?? 'cover') as SlideBackgroundImageSize })}
+                  disabled={!hasImage}
                 />
-              </Box>
-            ) : null}
-            <Text size="xs" c="dimmed" lineClamp={1}>
-              {(data.path as string) ?? 'No image selected'}
-            </Text>
-            <Group justify="space-between" align="center">
-              <Button size="xs" variant="light" onClick={onChooseImage} disabled={!onChooseImage}>
-                Choose image
-              </Button>
-              {(data.path as string) ? (
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  color="red"
-                  onClick={() => updateData({ path: '', mediaAssetId: undefined, originalName: undefined })}
-                >
-                  Clear
-                </Button>
-              ) : null}
-            </Group>
-          </Stack>
+                <Select
+                  label="Image position"
+                  data={imagePositionOptions}
+                  value={imagePosition}
+                  onChange={(value) => updateData({ imagePosition: (value ?? 'center') as SlideBackgroundImagePosition })}
+                  disabled={!hasImage}
+                />
+                <Stack gap={6}>
+                  <Text size="sm" fw={500}>
+                    Image
+                  </Text>
+                  {hasImage ? (
+                    <Box
+                      style={{
+                        width: '100%',
+                        aspectRatio: '16 / 9',
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        background: '#0b0f18',
+                        border: '1px solid #232a3b'
+                      }}
+                    >
+                      <img
+                        src={resolveMediaPath(data.path as string)}
+                        alt="Image preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
+                      />
+                    </Box>
+                  ) : null}
+                  <Text size="xs" c="dimmed" lineClamp={1}>
+                    {(data.path as string) ?? 'No image selected'}
+                  </Text>
+                  <Group justify="space-between" align="center">
+                    <Button size="xs" variant="light" onClick={onChooseImage} disabled={!onChooseImage}>
+                      Choose image
+                    </Button>
+                    {hasImage ? (
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        color="red"
+                        onClick={() =>
+                          updateData({
+                            path: '',
+                            mediaAssetId: undefined,
+                            originalName: undefined,
+                            imageSize: undefined,
+                            imagePosition: undefined
+                          })
+                        }
+                      >
+                        Clear
+                      </Button>
+                    ) : null}
+                  </Group>
+                </Stack>
+              </>
+            );
+          })()}
         </>
       )}
     </Stack>

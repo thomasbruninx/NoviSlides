@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import clsx from 'clsx';
 /* eslint-disable @next/next/no-img-element */
-import type { SlideDto, SlideElementDto } from '@/lib/types';
+import type { SlideBackgroundImagePosition, SlideBackgroundImageSize, SlideDto, SlideElementDto } from '@/lib/types';
 import { resolveMediaPath } from '@/lib/utils/media';
 import { getIconUrl } from '@/lib/utils/icons';
 import { resolveRenderableFontFamily } from '@/lib/utils/fonts';
@@ -20,7 +20,7 @@ function getFragmentClass(animation?: string) {
   }
 }
 
-const resolveBackgroundPosition = (value: string) => {
+const resolvePosition = (value: string) => {
   const [vertical, horizontal] = value.split('-') as [string | undefined, string | undefined];
   const x = horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center';
   const y = vertical === 'top' ? 'top' : vertical === 'bottom' ? 'bottom' : 'center';
@@ -38,7 +38,7 @@ export default function SlideSection({
   const backgroundSize = slide.backgroundImageSize ?? 'cover';
   const backgroundPosition = slide.backgroundImagePosition ?? 'center';
   const resolvedSize = backgroundSize === 'center' ? 'auto' : backgroundSize;
-  const resolvedPosition = resolveBackgroundPosition(backgroundPosition);
+  const resolvedPosition = resolvePosition(backgroundPosition);
   return (
     <section
       data-background-color={slide.backgroundColor ?? undefined}
@@ -215,6 +215,10 @@ export default function SlideSection({
           }
           const isVideo = element.type === 'video';
           const path = resolveMediaPath(data.path as string | undefined);
+          const imageSize = ((data.imageSize as SlideBackgroundImageSize | undefined) ?? 'cover');
+          const imagePosition = ((data.imagePosition as SlideBackgroundImagePosition | undefined) ?? 'center');
+          const imageObjectFit = imageSize === 'center' ? 'none' : imageSize;
+          const imageObjectPosition = resolvePosition(imagePosition);
 
           return (
             <div
@@ -225,7 +229,7 @@ export default function SlideSection({
               style={fragmentStyle}
             >
               {path ? (
-                <div style={contentStyle}>
+                <div style={{ ...contentStyle, overflow: 'hidden' }}>
                   {isVideo ? (
                     <video
                       src={path}
@@ -241,7 +245,12 @@ export default function SlideSection({
                     <img
                       src={path}
                       alt={(data.originalName as string | undefined) ?? ''}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: imageObjectFit,
+                        objectPosition: imageObjectPosition
+                      }}
                     />
                   )}
                 </div>

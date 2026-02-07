@@ -21,6 +21,8 @@ export type SlideElementDataImage = SlideElementDataBase & {
   mediaAssetId?: string;
   path?: string;
   originalName?: string;
+  imageSize?: SlideBackgroundImageSize;
+  imagePosition?: SlideBackgroundImagePosition;
   crop?: { x: number; y: number; width: number; height: number };
 };
 

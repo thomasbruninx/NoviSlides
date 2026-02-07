@@ -31,14 +31,6 @@ const backgroundPositionOptions = [
   { value: 'bottom-right', label: 'Bottom right' }
 ];
 
-const resolveObjectPosition = (value: string) => {
-  const [vertical, horizontal] = value.split('-') as [string | undefined, string | undefined];
-  const x =
-    horizontal === 'left' ? 'left' : horizontal === 'right' ? 'right' : 'center';
-  const y = vertical === 'top' ? 'top' : vertical === 'bottom' ? 'bottom' : 'center';
-  return `${x} ${y}`;
-};
-
 export default function SlidePropsPanel({
   slide,
   onChange,
@@ -63,8 +55,6 @@ export default function SlidePropsPanel({
 
   const backgroundSize = slide.backgroundImageSize ?? 'cover';
   const backgroundPosition = slide.backgroundImagePosition ?? 'center';
-  const objectFit = backgroundSize === 'center' ? 'none' : backgroundSize;
-  const objectPosition = resolveObjectPosition(backgroundPosition);
   const hasBackgroundImage = Boolean(slide.backgroundImagePath);
 
   return (
@@ -98,7 +88,7 @@ export default function SlidePropsPanel({
             <img
               src={resolveMediaPath(slide.backgroundImagePath)}
               alt="Background preview"
-              style={{ width: '100%', height: '100%', objectFit, objectPosition }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }}
             />
           </Box>
         ) : null}
