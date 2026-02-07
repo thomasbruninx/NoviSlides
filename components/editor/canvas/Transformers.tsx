@@ -7,10 +7,14 @@ import type Konva from 'konva';
 
 export default function Transformers({
   transformerRef,
-  selectedNodes
+  selectedNodes,
+  onTransformStart,
+  onTransformEnd
 }: {
   transformerRef: RefObject<Konva.Transformer | null>;
   selectedNodes: Konva.Node[];
+  onTransformStart?: () => void;
+  onTransformEnd?: () => void;
 }) {
   useEffect(() => {
     const transformer = transformerRef.current;
@@ -26,13 +30,12 @@ export default function Transformers({
   return (
     <Transformer
       ref={transformerRef}
-      rotateEnabled={selectedNodes.length === 1}
-      resizeEnabled={selectedNodes.length === 1}
-      enabledAnchors={
-        selectedNodes.length === 1
-          ? ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
-          : []
-      }
+      rotateEnabled
+      resizeEnabled
+      flipEnabled={false}
+      enabledAnchors={['top-left', 'top-center', 'top-right', 'middle-left', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']}
+      onTransformStart={onTransformStart}
+      onTransformEnd={onTransformEnd}
       ignoreStroke
       boundBoxFunc={(oldBox, newBox) => {
         if (newBox.width < 10 || newBox.height < 10) {

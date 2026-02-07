@@ -480,6 +480,45 @@ export default function KonvaStage({
     [clearGuides, magneticGuides, screen.height, screen.width, selectedElementIds, selectedIdSet, setGuidesIfChanged, showGuides, slide]
   );
 
+  const handleTransformerTransformStart = useCallback(() => {
+    clearGuides();
+  }, [clearGuides]);
+
+  const handleTransformerTransformEnd = useCallback(() => {
+    if (!onElementsCommit) return;
+    const transformer = transformerRef.current;
+    if (!transformer) return;
+    const nodes = transformer.nodes();
+    if (nodes.length <= 1) return;
+    const elementById = new Map((slide?.elements ?? []).map((element) => [element.id, element]));
+    const updates: Array<{ id: string; attrs: Partial<SlideElementDto> }> = [];
+    nodes.forEach((node) => {
+      const id = node.id();
+      if (!id) return;
+      const source = elementById.get(id);
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      const baseWidth = typeof node.width() === 'number' && node.width() > 0 ? node.width() : source?.width ?? 0;
+      const baseHeight = typeof node.height() === 'number' && node.height() > 0 ? node.height() : source?.height ?? 0;
+      updates.push({
+        id,
+        attrs: {
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(10, Math.abs(baseWidth * scaleX)),
+          height: Math.max(10, Math.abs(baseHeight * scaleY)),
+          rotation: node.rotation()
+        }
+      });
+      node.scaleX(1);
+      node.scaleY(1);
+    });
+
+    if (!updates.length) return;
+    onElementsCommit(updates, { skipGridSnap: true });
+    transformer.getLayer()?.batchDraw();
+  }, [onElementsCommit, slide?.elements]);
+
   const labelFonts = useMemo(
     () =>
       (slide?.elements ?? [])
@@ -828,12 +867,18 @@ export default function KonvaStage({
                   onDragEnd={handleElementDragEnd}
                   draggable={!panMode && !isMiddlePanning}
                   canSelect={!panMode && !isMiddlePanning}
+                  allowNodeTransformCommit={selectedElementIds.length <= 1}
                   onMiddleMouseDown={beginMiddlePan}
                 />
               ))}
           </Layer>
           <Layer x={contentOffset.x} y={contentOffset.y}>
-            <Transformers transformerRef={transformerRef} selectedNodes={selectedNodes} />
+            <Transformers
+              transformerRef={transformerRef}
+              selectedNodes={selectedNodes}
+              onTransformStart={handleTransformerTransformStart}
+              onTransformEnd={handleTransformerTransformEnd}
+            />
           </Layer>
           {showGuides && guides.length ? (
             <Layer

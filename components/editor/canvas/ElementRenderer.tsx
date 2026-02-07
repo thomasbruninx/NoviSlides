@@ -21,6 +21,7 @@ export default function ElementRenderer({
   onDragEnd,
   draggable = true,
   canSelect = true,
+  allowNodeTransformCommit = true,
   onMiddleMouseDown
 }: {
   element: SlideElementDto;
@@ -33,6 +34,7 @@ export default function ElementRenderer({
   onDragEnd?: (id: string) => void;
   draggable?: boolean;
   canSelect?: boolean;
+  allowNodeTransformCommit?: boolean;
   onMiddleMouseDown?: (payload: { clientX: number; clientY: number }) => void;
 }) {
   const localRef = useRef<Konva.Node | null>(null);
@@ -186,14 +188,17 @@ export default function ElementRenderer({
       onDragEnd?.(element.id);
     },
     onTransformEnd: (event: Konva.KonvaEventObject<Event>) => {
+      if (!allowNodeTransformCommit) {
+        return;
+      }
       const node = event.target;
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
       node.scaleX(1);
       node.scaleY(1);
 
-      const width = Math.max(10, node.width() * scaleX);
-      const height = Math.max(10, node.height() * scaleY);
+      const width = Math.max(10, Math.abs(node.width() * scaleX));
+      const height = Math.max(10, Math.abs(node.height() * scaleY));
 
       onCommit({
         x: node.x(),
@@ -201,7 +206,7 @@ export default function ElementRenderer({
         width,
         height,
         rotation: node.rotation()
-      });
+      }, { skipGridSnap: true });
     }
   };
 
