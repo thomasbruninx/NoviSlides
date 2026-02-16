@@ -2,6 +2,9 @@ import { fail, ok } from '@/lib/utils/respond';
 import { prisma } from '@/lib/db/prisma';
 import { toScreenDto, toSlideDto, toSlideElementDto, toSlideshowDto } from '@/lib/utils/serializers';
 
+type SlideRecord = Parameters<typeof toSlideDto>[0];
+type SlideElementRecord = Parameters<typeof toSlideElementDto>[0];
+
 export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
   const params = await context.params;
   try {
@@ -24,7 +27,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
       return fail('not_found', 'Screen deck not found', 404);
     }
 
-    const slides = screen.slides.map((slide) => ({
+    const slides = screen.slides.map((slide: SlideRecord & { elements: SlideElementRecord[] }) => ({
       ...toSlideDto(slide),
       elements: slide.elements.map(toSlideElementDto)
     }));
